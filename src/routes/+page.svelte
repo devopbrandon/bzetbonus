@@ -1,5 +1,8 @@
 <script lang="ts">
+	import Deals from '$lib/components/sections/Deals.svelte';
 	import Hero from '$lib/components/sections/Hero.svelte';
+
+	let { data } = $props();
 </script>
 
 <svelte:head>
@@ -7,3 +10,4 @@
 </svelte:head>
 
 <Hero />
+<Deals deals={data.deals} />

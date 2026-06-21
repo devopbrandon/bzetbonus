@@ -3,25 +3,36 @@
 	import favicon from '$lib/assets/favicon.png';
 	import Sidebar from '$lib/components/navigation/Sidebar.svelte';
 	import Background from '$lib/components/ui/Background.svelte';
+	import { page } from '$app/state';
+	import AdminNav from '$lib/components/navigation/AdminNav.svelte';
 
 	let { children } = $props();
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<div
-	class="relative flex min-h-screen overflow-hidden bg-linear-to-b from-[#131F42] via-[#16244D] to-[#0D172E] font-[Inter]"
->
-	<Background />
-
-	<div class="relative z-10 flex min-h-screen w-full">
-		<Sidebar />
-
+{#if page.url.pathname.startsWith('/dashboard')}
+	<div class="min-h-screen bg-linear-to-b from-[#131F42] via-[#16244D] to-[#0D172E] font-[Inter]">
+		<AdminNav />
 		<main class="min-w-0 flex-1">
 			{@render children()}
 		</main>
 	</div>
-</div>
+{:else}
+	<div
+		class="relative flex min-h-screen overflow-hidden bg-linear-to-b from-[#131F42] via-[#16244D] to-[#0D172E] font-[Inter]"
+	>
+		<Background />
+
+		<div class="relative z-10 flex min-h-screen w-full">
+			<Sidebar />
+
+			<main class="min-w-0 flex-1">
+				{@render children()}
+			</main>
+		</div>
+	</div>
+{/if}
 
 <style>
 	@font-face {
