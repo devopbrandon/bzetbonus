@@ -1,7 +1,5 @@
 <script lang="ts">
-	import { Sparkle } from 'lucide-svelte';
-
-	type SparkleItem = {
+	type StarItem = {
 		id: number;
 		left: number;
 		top: number;
@@ -17,7 +15,7 @@
 		return x - Math.floor(x);
 	}
 
-	const sparkles: SparkleItem[] = Array.from({ length: 18 }, (_, index) => {
+	const stars: StarItem[] = Array.from({ length: 16 }, (_, index) => {
 		const r1 = seededRandom(index + 1);
 		const r2 = seededRandom(index + 12);
 		const r3 = seededRandom(index + 24);
@@ -25,103 +23,159 @@
 
 		return {
 			id: index,
-			left: 5 + r1 * 90,
-			top: 5 + r2 * 90,
-			size: 11 + r3 * 15,
-			duration: 5.8 + r4 * 4.2,
+			left: 4 + r1 * 92,
+			top: 5 + r2 * 88,
+			size: 18 + r3 * 26,
+			duration: 4.8 + r4 * 4.5,
 
-			// Die ersten starten sofort, der Rest ist schon im Loop.
-			delay: index < 5 ? index * 0.25 : -(seededRandom(index + 80) * 8),
+			// startet direkt, nicht erst nach mehreren Sekunden
+			delay: index < 6 ? index * 0.18 : -(seededRandom(index + 80) * 7),
 
-			rotate: seededRandom(index + 120) * 360,
-			opacity: 0.75 + seededRandom(index + 160) * 0.25
+			rotate: -18 + seededRandom(index + 120) * 36,
+			opacity: 0.78 + seededRandom(index + 160) * 0.22
 		};
 	});
 </script>
 
 <div class="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-	{#each sparkles as sparkle}
+	{#each stars as star}
 		<span
-			class="casino-sparkle"
+			class="casino-star"
 			style="
-				left: {sparkle.left}%;
-				top: {sparkle.top}%;
-				animation-delay: {sparkle.delay}s;
-				animation-duration: {sparkle.duration}s;
-				--sparkle-size: {sparkle.size}px;
-				--sparkle-rotate: {sparkle.rotate}deg;
-				--sparkle-opacity: {sparkle.opacity};
+				left: {star.left}%;
+				top: {star.top}%;
+				width: {star.size}px;
+				height: {star.size}px;
+				animation-delay: {star.delay}s;
+				animation-duration: {star.duration}s;
+				--star-rotate: {star.rotate}deg;
+				--star-opacity: {star.opacity};
 			"
 		>
-			<Sparkle size={sparkle.size} strokeWidth={2.3} />
+			<span class="casino-star__ray casino-star__ray--horizontal"></span>
+			<span class="casino-star__ray casino-star__ray--vertical"></span>
+			<span class="casino-star__diamond"></span>
 		</span>
 	{/each}
 </div>
 
 <style>
-	.casino-sparkle {
+	.casino-star {
 		position: absolute;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: var(--sparkle-size);
-		height: var(--sparkle-size);
-		color: rgba(255, 255, 255, 0.96);
+		display: block;
 		opacity: 0;
-		transform: translate(-50%, -50%) scale(0) rotate(var(--sparkle-rotate));
-		filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.85))
-			drop-shadow(0 0 18px rgba(255, 255, 255, 0.38));
-		animation-name: sparkleBlink;
+		transform: translate(-50%, -50%) scale(0.15) rotate(var(--star-rotate));
+		animation-name: casinoStarFlash;
 		animation-timing-function: ease-in-out;
 		animation-iteration-count: infinite;
 		will-change: opacity, transform, filter;
+		filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.95))
+			drop-shadow(0 0 14px rgba(255, 255, 255, 0.55))
+			drop-shadow(0 0 26px rgba(180, 220, 255, 0.35));
 	}
 
-	.casino-sparkle :global(svg) {
+	.casino-star__diamond {
+		position: absolute;
+		inset: 27%;
+		background: linear-gradient(
+			135deg,
+			rgba(255, 255, 255, 1) 0%,
+			rgba(255, 255, 255, 0.98) 38%,
+			rgba(185, 205, 220, 0.96) 66%,
+			rgba(255, 255, 255, 1) 100%
+		);
+		clip-path: polygon(50% 0%, 64% 36%, 100% 50%, 64% 64%, 50% 100%, 36% 64%, 0% 50%, 36% 36%);
+		border-radius: 1px;
+		box-shadow:
+			0 0 3px rgba(255, 255, 255, 1),
+			0 0 9px rgba(255, 255, 255, 0.78),
+			0 0 18px rgba(255, 255, 255, 0.38);
+	}
+
+	.casino-star__ray {
+		position: absolute;
+		left: 50%;
+		top: 50%;
 		display: block;
+		transform: translate(-50%, -50%);
+		pointer-events: none;
 	}
 
-	@keyframes sparkleBlink {
+	.casino-star__ray--horizontal {
+		width: 118%;
+		height: 8%;
+		background: linear-gradient(
+			90deg,
+			transparent 0%,
+			rgba(255, 255, 255, 0.1) 18%,
+			rgba(255, 255, 255, 0.95) 50%,
+			rgba(255, 255, 255, 0.1) 82%,
+			transparent 100%
+		);
+		border-radius: 999px;
+	}
+
+	.casino-star__ray--vertical {
+		width: 8%;
+		height: 118%;
+		background: linear-gradient(
+			180deg,
+			transparent 0%,
+			rgba(255, 255, 255, 0.1) 18%,
+			rgba(255, 255, 255, 0.95) 50%,
+			rgba(255, 255, 255, 0.1) 82%,
+			transparent 100%
+		);
+		border-radius: 999px;
+	}
+
+	@keyframes casinoStarFlash {
 		0% {
 			opacity: 0;
-			transform: translate(-50%, -50%) scale(0) rotate(var(--sparkle-rotate));
+			transform: translate(-50%, -50%) scale(0.08) rotate(var(--star-rotate));
 			filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0)) drop-shadow(0 0 0 rgba(255, 255, 255, 0));
 		}
 
-		4% {
-			opacity: calc(var(--sparkle-opacity) * 0.45);
-			transform: translate(-50%, -50%) scale(0.55) rotate(var(--sparkle-rotate));
+		5% {
+			opacity: calc(var(--star-opacity) * 0.55);
+			transform: translate(-50%, -50%) scale(0.62) rotate(var(--star-rotate));
 		}
 
-		8% {
-			opacity: var(--sparkle-opacity);
-			transform: translate(-50%, -50%) scale(1.18) rotate(var(--sparkle-rotate));
-			filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.95))
-				drop-shadow(0 0 24px rgba(255, 255, 255, 0.48));
+		9% {
+			opacity: var(--star-opacity);
+			transform: translate(-50%, -50%) scale(1.22) rotate(var(--star-rotate));
+			filter: drop-shadow(0 0 6px rgba(255, 255, 255, 1))
+				drop-shadow(0 0 16px rgba(255, 255, 255, 0.75))
+				drop-shadow(0 0 34px rgba(180, 220, 255, 0.45));
 		}
 
 		13% {
+			opacity: calc(var(--star-opacity) * 0.72);
+			transform: translate(-50%, -50%) scale(0.88) rotate(var(--star-rotate));
+		}
+
+		18% {
 			opacity: 0;
-			transform: translate(-50%, -50%) scale(0.18) rotate(var(--sparkle-rotate));
-			filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.45))
-				drop-shadow(0 0 12px rgba(255, 255, 255, 0.18));
+			transform: translate(-50%, -50%) scale(0.16) rotate(var(--star-rotate));
+			filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.4))
+				drop-shadow(0 0 12px rgba(255, 255, 255, 0.16));
 		}
 
 		100% {
 			opacity: 0;
-			transform: translate(-50%, -50%) scale(0) rotate(var(--sparkle-rotate));
+			transform: translate(-50%, -50%) scale(0.08) rotate(var(--star-rotate));
 		}
 	}
 
 	@media (max-width: 640px) {
-		.casino-sparkle {
-			filter: drop-shadow(0 0 7px rgba(255, 255, 255, 0.7))
-				drop-shadow(0 0 15px rgba(255, 255, 255, 0.28));
+		.casino-star {
+			filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.82))
+				drop-shadow(0 0 14px rgba(255, 255, 255, 0.36));
 		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.casino-sparkle {
+		.casino-star {
 			display: none;
 			animation: none;
 		}
