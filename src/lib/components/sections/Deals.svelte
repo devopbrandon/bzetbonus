@@ -36,7 +36,7 @@
 	});
 </script>
 
-<section class="mx-auto max-w-7xl px-4 pb-10 sm:px-0">
+<section class="mx-auto max-w-7xl px-4 pb-20 sm:px-0">
 	{#if showDeals}
 		<div class="space-y-4 sm:space-y-5">
 			{#each deals as deal, index (deal.id)}

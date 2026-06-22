@@ -153,13 +153,15 @@
 			const safeBrand = (brand || 'brand').toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
 			const path = `logos/${safeBrand}-${Date.now()}.${ext}`;
 
-			const { error: uploadError } = await supabase.storage.from('deals-logos').upload(path, file, {
-				cacheControl: '3600',
-				upsert: true,
-				contentType: file.type
-			});
+			const { error: storageError } = await supabase.storage
+				.from('deals-logos')
+				.upload(path, file, {
+					cacheControl: '3600',
+					upsert: true,
+					contentType: file.type
+				});
 
-			if (uploadError) throw uploadError;
+			if (storageError) throw storageError;
 
 			const { data: urlData } = supabase.storage.from('deals-logos').getPublicUrl(path);
 			logourl = urlData.publicUrl;
@@ -262,7 +264,7 @@
 					</label>
 
 					<label class="block">
-						<span class="mb-1 block text-sm text-white/80">Bonus Type*</span>
+						<span class="mb-1 block text-sm text-white/80">Bonus Type</span>
 						<div
 							class="group flex items-center rounded-xl border border-white/10 bg-black/30 transition focus-within:border-indigo-400/60 focus-within:ring-1 focus-within:ring-indigo-400/60"
 						>
@@ -291,7 +293,7 @@
 
 				<div class="grid gap-4 sm:grid-cols-2">
 					<label class="block">
-						<span class="mb-1 block text-sm text-white/80">Max Bonus*</span>
+						<span class="mb-1 block text-sm text-white/80">Max Bonus</span>
 						<div
 							class="group flex items-center rounded-xl border border-white/10 bg-black/30 transition focus-within:border-indigo-400/60 focus-within:ring-1 focus-within:ring-indigo-400/60"
 						>
@@ -304,7 +306,6 @@
 								placeholder="e.g. €1,000"
 								class="w-full rounded-r-xl bg-transparent px-3 py-3 placeholder:text-white/40 focus:outline-none"
 								bind:value={maxbonus}
-								required
 							/>
 						</div>
 					</label>
@@ -392,11 +393,13 @@
 					<input
 						type="number"
 						min="0"
-						name="position"
-						class="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 placeholder:text-white/40 focus:border-indigo-400/60 focus:ring-1 focus:ring-indigo-400/60 focus:outline-none"
+						class="w-full cursor-not-allowed rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-white/50 placeholder:text-white/40 focus:outline-none"
 						bind:value={position}
-						readonly
+						disabled
 					/>
+					<p class="mt-1 text-xs text-white/40">
+						Position wird automatisch vergeben und kann hier nicht bearbeitet werden.
+					</p>
 				</label>
 			</div>
 

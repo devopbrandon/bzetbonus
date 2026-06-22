@@ -79,7 +79,7 @@
 
 <aside
 	class={[
-		'fixed left-0 top-0 z-[60] flex h-dvh shrink-0 flex-col border-r border-white/5 bg-[#203266]/90 py-6 shadow-2xl shadow-black/30 backdrop-blur-xl transition-all duration-300 ease-out md:sticky md:z-auto md:bg-[#203266]/50 md:shadow-none',
+		'fixed left-0 top-0 z-60 flex h-dvh shrink-0 flex-col overflow-hidden border-r border-white/5 bg-[#203266]/90 py-6 shadow-2xl shadow-black/30 backdrop-blur-xl transition-all duration-300 ease-out md:z-40 md:bg-[#203266]/50 md:shadow-none',
 		collapsed ? 'md:w-20' : 'md:w-64',
 		mobileOpen ? 'w-72 translate-x-0' : 'w-72 -translate-x-full md:translate-x-0'
 	]}

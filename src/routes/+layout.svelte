@@ -27,7 +27,7 @@
 		<div class="relative z-10 flex min-h-screen w-full">
 			<Sidebar />
 
-			<main class="min-w-0 flex-1">
+			<main class="min-w-0 flex-1 sm:ml-72">
 				{@render children()}
 			</main>
 		</div>

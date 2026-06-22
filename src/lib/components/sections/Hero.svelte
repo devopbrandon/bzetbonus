@@ -10,7 +10,7 @@
 		/>
 
 		<p
-			class="hero-slogan mt-8 font-[varsity] text-[clamp(1.3rem,3.2vw,2.5rem)] uppercase leading-tight tracking-widest text-white sm:mt-10"
+			class="hero-slogan mt-8 font-[varsity] text-5xl uppercase leading-tight tracking-widest text-white sm:mt-10"
 		>
 			{#each ['Ein', 'Spin', 'kann', 'dein', 'Leben', 'verändern!'] as word, i}
 				<span class="word" style="--i: {i}">{word}&nbsp;</span>

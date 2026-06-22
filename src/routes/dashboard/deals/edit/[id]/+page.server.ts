@@ -44,9 +44,18 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		throw redirect(302, '/dashboard/deals');
 	}
 
-	const { data, error } = await locals.supabase.from('deals').select('*').eq('id', id).single();
+	const { data, error } = await locals.supabase
+		.from('deals')
+		.select('*')
+		.eq('id', id)
+		.maybeSingle();
 
-	if (error || !data) {
+	if (error) {
+		console.error('Load deal error:', error);
+		throw redirect(302, '/dashboard/deals');
+	}
+
+	if (!data) {
 		throw redirect(302, '/dashboard/deals');
 	}
 
@@ -85,39 +94,11 @@ export const actions: Actions = {
 		const promocode = str('promocode');
 		const information = str('information');
 
-		const positionRaw = formData.get('position');
-		const position =
-			typeof positionRaw === 'string' && positionRaw.trim() !== '' ? Number(positionRaw) : null;
-
 		const features = parseStringArray(formData, 'features');
 		const payments = parseStringArray(formData, 'payments');
 
 		const values = {
-			brand,
-			bonus,
-			bonustype,
-			maxbet,
-			maxbonus,
-			freespins,
-			logourl,
-			reflink,
-			wager,
-			wagertype,
-			features,
-			payments,
-			promocode,
-			information,
-			position
-		};
-
-		if (!brand || !bonus) {
-			return fail(400, {
-				error: 'Bitte Brand und Bonus ausfüllen.',
-				values
-			});
-		}
-
-		const updateData: Record<string, unknown> = {
+			id,
 			brand,
 			bonus,
 			bonustype,
@@ -134,9 +115,29 @@ export const actions: Actions = {
 			information
 		};
 
-		if (position !== null && Number.isFinite(position)) {
-			updateData.position = position;
+		if (!brand || !bonus) {
+			return fail(400, {
+				error: 'Bitte Brand und Bonus ausfüllen.',
+				values
+			});
 		}
+
+		const updateData = {
+			brand,
+			bonus,
+			bonustype: bonustype || null,
+			maxbet: maxbet || null,
+			maxbonus: maxbonus || null,
+			freespins: freespins || null,
+			logourl: logourl || null,
+			reflink: reflink || null,
+			wager: wager || null,
+			wagertype: wagertype || null,
+			features,
+			payments,
+			promocode: promocode || null,
+			information: information || null
+		};
 
 		const { data, error } = await locals.supabase
 			.from('deals')
@@ -146,24 +147,18 @@ export const actions: Actions = {
 			.maybeSingle();
 
 		if (error) {
-			console.error('Supabase update error:', error);
+			console.error('Update deal error:', error);
 
 			return fail(500, {
-				error: 'Fehler beim Speichern in der Datenbank.',
-				values: {
-					...updateData,
-					id
-				}
+				error: error.message || 'Fehler beim Speichern in der Datenbank.',
+				values
 			});
 		}
 
 		if (!data) {
 			return fail(404, {
 				error: 'Deal nicht gefunden oder keine Berechtigung zum Bearbeiten.',
-				values: {
-					...updateData,
-					id
-				}
+				values
 			});
 		}
 

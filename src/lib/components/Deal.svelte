@@ -2,20 +2,24 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import { tick } from 'svelte';
 	import {
 		ArrowRight,
 		Check,
 		ChevronDown,
 		Copy,
 		CreditCard,
+		Flag,
 		Info,
 		Pencil,
 		ShieldCheck,
 		Sparkles,
 		TicketPercent,
+		Wallet,
 		Zap
 	} from 'lucide-svelte';
 	import ConfirmDelete from './ConfirmDelete.svelte';
+	import { slide } from 'svelte/transition';
 
 	export interface Deal {
 		id: number;
@@ -58,6 +62,7 @@
 	let copied = $state(false);
 	let copying = $state(false);
 	let expanded = $state(false);
+	let detailsEl = $state<HTMLDivElement | null>(null);
 
 	const fmt = (value: string | null | undefined) => {
 		if (!value || value.trim() === '' || value === '_') return '—';
@@ -114,6 +119,31 @@
 			copying = false;
 		}
 	}
+
+	async function toggleDetails() {
+		expanded = !expanded;
+
+		if (!expanded || !browser) return;
+
+		await tick();
+
+		requestAnimationFrame(() => {
+			if (!detailsEl) return;
+
+			const rect = detailsEl.getBoundingClientRect();
+
+			const panelTop = window.scrollY + rect.top;
+			const panelBottom = window.scrollY + rect.bottom;
+
+			const topTarget = panelTop - 120;
+			const bottomTarget = panelBottom - window.innerHeight + 120;
+
+			window.scrollTo({
+				top: Math.max(topTarget, bottomTarget),
+				behavior: 'smooth'
+			});
+		});
+	}
 </script>
 
 <article class="deal-card group">
@@ -149,21 +179,15 @@
 					<div class="brand-badges">
 						<span class="mini-badge">
 							<Sparkles class="h-3 w-3" />
-							Exclusive
+							Exklusiv
 						</span>
 
 						{#if fmt(deal.freespins) !== '—'}
 							<span class="mini-badge mini-badge-blue">
-								{fmt(deal.freespins)} FS
+								{fmt(deal.freespins)} FS ohne Einzahlung
 							</span>
 						{/if}
 					</div>
-
-					<h3 class="brand-title">
-						{fmt(deal.brand)}
-					</h3>
-
-					<p class="brand-subtitle">Samet Bonus Deal</p>
 				</div>
 			</div>
 
@@ -232,7 +256,7 @@
 										{deal.promocode}
 									</p>
 								{:else}
-									<p class="promo-empty">No code required</p>
+									<p class="promo-empty">Kein Code benötigt</p>
 								{/if}
 							</div>
 
@@ -276,7 +300,7 @@
 						{#if hasDetails}
 							<button
 								type="button"
-								onclick={() => (expanded = !expanded)}
+								onclick={toggleDetails}
 								class="details-button"
 								aria-expanded={expanded}
 							>
@@ -295,7 +319,7 @@
 							aria-label={`Open ${fmt(deal.brand)} deal`}
 						>
 							<span class="relative z-10 flex items-center gap-2">
-								Play Now
+								Jetzt Spielen
 								<ArrowRight
 									class="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
 								/>
@@ -307,16 +331,16 @@
 		</div>
 
 		{#if expanded && hasDetails}
-			<div class="details-panel">
+			<div out:slide={{ duration: 200 }} class="details-panel" bind:this={detailsEl}>
 				<div class="details-grid">
 					{#if deal.information?.trim()}
 						<section class="details-section">
 							<div class="mb-3 flex items-center gap-2">
 								<span class="section-icon">
-									<Info class="h-4 w-4" />
+									<Flag class="h-4 w-4" />
 								</span>
 
-								<h4 class="section-title">Information</h4>
+								<h4 class="section-title">Features</h4>
 							</div>
 
 							<p class="details-text">
@@ -329,7 +353,7 @@
 						<section class="details-section">
 							<div class="mb-4 flex items-center gap-2">
 								<span class="section-icon">
-									<CreditCard class="h-4 w-4" />
+									<Wallet class="h-4 w-4" />
 								</span>
 
 								<h4 class="section-title">Payments</h4>
@@ -550,7 +574,7 @@
 	}
 
 	.brand-panel::after {
-		content: '777';
+		content: ' ';
 		position: absolute;
 		right: 18px;
 		bottom: 12px;
@@ -579,14 +603,6 @@
 		width: 128px;
 		height: 92px;
 		place-items: center;
-		border-radius: 22px;
-		border: 1px solid rgba(255, 255, 255, 0.12);
-		background:
-			linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
-			radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.16), transparent 60%);
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.13),
-			0 18px 30px -24px rgba(0, 0, 0, 0.9);
 		z-index: 1;
 	}
 
@@ -595,7 +611,6 @@
 		position: absolute;
 		inset: 9px;
 		border-radius: 17px;
-		border: 1px solid rgba(255, 255, 255, 0.06);
 		pointer-events: none;
 	}
 
@@ -647,7 +662,7 @@
 		border: 1px solid rgba(255, 255, 255, 0.12);
 		background: rgba(255, 255, 255, 0.055);
 		padding: 6px 9px;
-		font-size: 10px;
+		font-size: 12px;
 		font-weight: 1000;
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
@@ -656,7 +671,7 @@
 
 	.mini-badge-blue {
 		border-color: rgba(147, 197, 253, 0.22);
-		background: rgba(96, 165, 250, 0.105);
+		background: rgba(96, 165, 250, 0.4);
 		color: rgba(219, 234, 254, 0.9);
 	}
 
