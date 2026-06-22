@@ -1,5 +1,5 @@
 <section
-	class="relative isolate flex min-h-140 items-center justify-center overflow-hidden px-5 py-16 sm:min-h-160 lg:min-h-175"
+	class="relative isolate flex min-h-100 items-center justify-center overflow-hidden px-5 pt-2 sm:min-h-160 lg:min-h-175"
 >
 	<div class="relative z-10 flex flex-col items-center text-center">
 		<img
@@ -10,7 +10,7 @@
 		/>
 
 		<p
-			class="hero-slogan mt-8 font-[varsity] text-5xl uppercase leading-tight tracking-widest text-white sm:mt-10"
+			class="hero-slogan mt-8 font-[varsity] text-2xl sm:text-4xl lg:text-5xl uppercase leading-tight tracking-widest text-white sm:mt-10"
 		>
 			{#each ['Ein', 'Spin', 'kann', 'dein', 'Leben', 'verändern!'] as word, i}
 				<span class="word" style="--i: {i}">{word}&nbsp;</span>

@@ -615,8 +615,8 @@
 	}
 
 	.brand-logo {
-		max-height: 64px;
-		max-width: 112px;
+		max-height: 70px;
+		max-width: 140px;
 		object-fit: contain;
 		filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.65));
 	}
@@ -736,17 +736,12 @@
 	}
 
 	.stat-label {
+		font-family: 'Montserrat', sans-serif;
 		font-size: 10px;
-		font-weight: 1000;
+		font-weight: bolder;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
 		color: rgba(255, 255, 255, 0.42);
-	}
-
-	.stat-icon {
-		width: 16px;
-		height: 16px;
-		flex-shrink: 0;
 	}
 
 	.stat-value {
@@ -910,7 +905,7 @@
 	.play-button {
 		position: relative;
 		display: inline-flex;
-		min-height: 46px;
+		min-height: 63px;
 		cursor: pointer;
 		align-items: center;
 		justify-content: center;
