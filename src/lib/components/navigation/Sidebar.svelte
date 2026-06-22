@@ -18,8 +18,8 @@
 	let mobileOpen = $state(false);
 
 	const navItems: NavItem[] = [
-		{ label: 'Bonus', href: '/', icon: Rocket },
-		{ label: 'Gratis Freispiele', href: '/gratis', icon: Gift }
+		{ label: 'Bonus', href: '/', icon: Rocket }
+		// { label: 'Gratis Freispiele', href: '/gratis', icon: Gift }
 	];
 
 	const socialItems: SocialItem[] = [
