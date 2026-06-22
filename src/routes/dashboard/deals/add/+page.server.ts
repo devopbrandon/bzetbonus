@@ -108,12 +108,6 @@ export const actions: Actions = {
 		const promocode = str('promocode');
 		const information = str('information');
 
-		const merkurRaw = str('merkur');
-		const novolineRaw = str('novoline');
-
-		const merkur = merkurRaw === 'true' || merkurRaw === 'on';
-		const novoline = novolineRaw === 'true' || novolineRaw === 'on';
-
 		const features = parseStringArray(formData, 'features');
 		const payments = parseStringArray(formData, 'payments');
 
@@ -131,9 +125,7 @@ export const actions: Actions = {
 			features,
 			payments,
 			promocode,
-			information,
-			merkur,
-			novoline
+			information
 		};
 
 		if (!brand || !bonus) {
@@ -157,9 +149,7 @@ export const actions: Actions = {
 			features,
 			payments,
 			promocode: promocode || null,
-			information: information || null,
-			merkur,
-			novoline
+			information: information || null
 		};
 
 		const { data, error } = await locals.supabase
