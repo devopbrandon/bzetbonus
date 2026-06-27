@@ -12,7 +12,7 @@
 		<p
 			class="hero-slogan mt-8 font-[varsity] text-2xl sm:text-4xl lg:text-5xl uppercase leading-tight tracking-widest text-white sm:mt-10"
 		>
-			{#each ['Ein', 'Spin', 'kann', 'dein', 'Leben', 'verändern!'] as word, i}
+			{#each ['Bonus', 'Angebote', 'die', 'Du', 'nicht', 'ablehnen', 'kannst!'] as word, i (word)}
 				<span class="word" style="--i: {i}">{word}&nbsp;</span>
 			{/each}
 		</p>
