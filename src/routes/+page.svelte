@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-	<title>Ein Spin kann dein Leben verändern - Samet777.com</title>
+	<title>Bonus Angebote, die Du nicht ablehnen kannst - Samet777.com</title>
 </svelte:head>
 
 <Hero />
