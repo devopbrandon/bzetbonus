@@ -33,7 +33,7 @@
 		'Mifinity',
 		'Jeton',
 		'PayPal',
-		'BankTransfer'
+		'BankTransfers'
 	];
 
 	type Deal = {
