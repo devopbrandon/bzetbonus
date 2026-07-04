@@ -32,7 +32,8 @@
 		'Google Pay',
 		'Mifinity',
 		'Jeton',
-		'PayPal'
+		'PayPal',
+		'BankTransfer'
 	];
 
 	type FormValues = {
