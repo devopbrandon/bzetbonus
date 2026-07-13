@@ -9,6 +9,8 @@
 		ChevronDown,
 		Copy,
 		CreditCard,
+		Eye,
+		EyeOff,
 		Flag,
 		Info,
 		Pencil,
@@ -37,6 +39,7 @@
 		promocode: string | null;
 		information: string | null;
 		payments: string[] | null;
+		is_visible: boolean;
 	}
 
 	const defaultDeal: Deal = {
@@ -54,7 +57,8 @@
 		wagertype: '',
 		promocode: '',
 		information: '',
-		payments: []
+		payments: [],
+		is_visible: true
 	};
 
 	let { deal = defaultDeal }: { deal?: Deal } = $props();
@@ -146,7 +150,10 @@
 	}
 </script>
 
-<article class="deal-card group">
+<article
+	class:deal-is-hidden={!deal.is_visible && page.url.pathname === '/dashboard/deals'}
+	class="deal-card group"
+>
 	<div class="deal-visual-clip" aria-hidden="true">
 		<div class="deal-top-line"></div>
 		<div class="deal-shine"></div>
@@ -283,11 +290,30 @@
 
 					<div class="actions-row">
 						{#if page.url.pathname === '/dashboard/deals'}
+							<form method="POST" action="?/toggleVisibility">
+								<input type="hidden" name="dealId" value={deal.id} />
+
+								<button
+									type="submit"
+									class:visibility-hidden={!deal.is_visible}
+									class="icon-action"
+									aria-label={deal.is_visible ? 'Deal verstecken' : 'Deal anzeigen'}
+									title={deal.is_visible ? 'Deal verstecken' : 'Deal anzeigen'}
+								>
+									{#if deal.is_visible}
+										<Eye class="h-4 w-4" />
+									{:else}
+										<EyeOff class="h-4 w-4" />
+									{/if}
+								</button>
+							</form>
+
 							<button
 								type="button"
 								onclick={() => goto(`/dashboard/deals/edit/${deal.id}`)}
 								class="icon-action"
-								aria-label="Edit deal"
+								aria-label="Deal bearbeiten"
+								title="Deal bearbeiten"
 							>
 								<Pencil class="h-4 w-4" />
 							</button>
@@ -428,6 +454,23 @@
 		padding: 1px;
 		-webkit-mask-composite: xor;
 		mask-composite: exclude;
+	}
+
+	.deal-is-hidden {
+		opacity: 0.55;
+		filter: grayscale(0.55);
+	}
+
+	.visibility-hidden {
+		border-color: rgba(248, 113, 113, 0.25);
+		background: rgba(248, 113, 113, 0.08);
+		color: rgba(252, 165, 165, 0.9);
+	}
+
+	.visibility-hidden:hover {
+		border-color: rgba(248, 113, 113, 0.45);
+		background: rgba(248, 113, 113, 0.14);
+		color: white;
 	}
 
 	.deal-card:hover {

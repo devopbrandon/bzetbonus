@@ -19,6 +19,7 @@
 		features?: string[] | null;
 		wagertype?: string | null;
 		payments?: string[] | null;
+		is_visible?: boolean | null;
 	};
 
 	let { deals = [] }: { deals: DealRow[] } = $props();
@@ -40,9 +41,11 @@
 	{#if showDeals}
 		<div class="space-y-4 sm:space-y-5">
 			{#each deals as deal, index (deal.id)}
-				<div class="deal-enter" style={`animation-delay: ${Math.min(index * 90, 700)}ms;`}>
-					<Deal {deal} />
-				</div>
+				{#if deal.is_visible}
+					<div class="deal-enter" style={`animation-delay: ${Math.min(index * 90, 700)}ms;`}>
+						<Deal {deal} />
+					</div>
+				{/if}
 			{/each}
 		</div>
 	{/if}
