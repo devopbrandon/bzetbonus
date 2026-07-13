@@ -5,11 +5,35 @@
 	import Background from '$lib/components/ui/Background.svelte';
 	import { page } from '$app/state';
 	import AdminNav from '$lib/components/navigation/AdminNav.svelte';
+	import { PUBLIC_GA_MEASUREMENT_ID } from '$env/static/public';
 
 	let { children } = $props();
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
+<svelte:head
+	><link rel="icon" href={favicon} />
+	<script
+		async
+		src={`https://www.googletagmanager.com/gtag/js?id=${PUBLIC_GA_MEASUREMENT_ID}`}
+	></script>
+
+	<script>
+		{
+			`
+			window.dataLayer = window.dataLayer || [];
+
+			function gtag() {
+				window.dataLayer.push(arguments);
+			}
+
+			window.gtag = gtag;
+
+			gtag('js', new Date());
+			gtag('config', '${PUBLIC_GA_MEASUREMENT_ID}');
+		`;
+		}
+	</script>
+</svelte:head>
 
 {#if page.url.pathname.startsWith('/dashboard')}
 	<div class="min-h-screen bg-linear-to-b from-[#131F42] via-[#16244D] to-[#0D172E] font-[Inter]">
