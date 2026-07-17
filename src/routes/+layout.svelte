@@ -7,55 +7,8 @@
 	import AdminNav from '$lib/components/navigation/AdminNav.svelte';
 
 	import { page } from '$app/state';
-	import { onMount } from 'svelte';
-	import { PUBLIC_GA_MEASUREMENT_ID } from '$env/static/public';
 
 	let { children } = $props();
-
-	type Gtag = (
-		command: 'js' | 'config' | 'event',
-		target: Date | string,
-		parameters?: Record<string, unknown>
-	) => void;
-
-	declare global {
-		interface Window {
-			dataLayer?: unknown[][];
-			gtag?: Gtag;
-		}
-	}
-
-	onMount(() => {
-		const measurementId = PUBLIC_GA_MEASUREMENT_ID;
-
-		if (!measurementId) {
-			console.warn('Google Analytics Measurement ID fehlt.');
-			return;
-		}
-
-		window.dataLayer ??= [];
-
-		window.gtag ??= (...args: unknown[]) => {
-			window.dataLayer?.push(args);
-		};
-
-		const existingScript = document.querySelector('script[data-google-analytics="true"]');
-
-		if (!existingScript) {
-			const script = document.createElement('script');
-
-			script.async = true;
-			script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(
-				measurementId
-			)}`;
-			script.dataset.googleAnalytics = 'true';
-
-			document.head.appendChild(script);
-		}
-
-		window.gtag('js', new Date());
-		window.gtag('config', measurementId);
-	});
 </script>
 
 <svelte:head>
@@ -88,15 +41,15 @@
 
 <style>
 	@font-face {
-		font-family: 'varsity';
-		src: url('/fonts/varsity.ttf') format('truetype');
+		font-family: 'Inter';
+		src: url('/fonts/Inter.woff2') format('woff2');
 		font-weight: 400;
 		font-style: normal;
 	}
 
 	@font-face {
-		font-family: 'Inter';
-		src: url('/fonts/Inter.woff2') format('woff2');
+		font-family: 'Sora';
+		src: url('/fonts/Sora-Regular.ttf') format('TrueType');
 		font-weight: 400;
 		font-style: normal;
 	}

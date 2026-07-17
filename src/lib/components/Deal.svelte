@@ -9,8 +9,6 @@
 		ChevronDown,
 		Copy,
 		CreditCard,
-		Eye,
-		EyeOff,
 		Flag,
 		Info,
 		Pencil,
@@ -39,7 +37,6 @@
 		promocode: string | null;
 		information: string | null;
 		payments: string[] | null;
-		is_visible: boolean;
 	}
 
 	const defaultDeal: Deal = {
@@ -57,11 +54,12 @@
 		wagertype: '',
 		promocode: '',
 		information: '',
-		payments: [],
-		is_visible: true
+		payments: []
 	};
 
-	let { deal = defaultDeal }: { deal?: Deal } = $props();
+	let { deal = defaultDeal, position }: { deal?: Deal; position?: number } = $props();
+
+	const isTop = $derived(position === 1);
 
 	let copied = $state(false);
 	let copying = $state(false);
@@ -150,10 +148,7 @@
 	}
 </script>
 
-<article
-	class:deal-is-hidden={!deal.is_visible && page.url.pathname === '/dashboard/deals'}
-	class="deal-card group"
->
+<article class="deal-card group" class:gold={isTop}>
 	<div class="deal-visual-clip" aria-hidden="true">
 		<div class="deal-top-line"></div>
 		<div class="deal-shine"></div>
@@ -190,8 +185,8 @@
 						</span>
 
 						{#if fmt(deal.freespins) !== '—'}
-							<span class="mini-badge mini-badge-blue">
-								{fmt(deal.freespins)} FS ohne Einzahlung
+							<span class="mini-badge mini-badge-accent">
+								{fmt(deal.freespins)} Kostenlose FS
 							</span>
 						{/if}
 					</div>
@@ -290,30 +285,11 @@
 
 					<div class="actions-row">
 						{#if page.url.pathname === '/dashboard/deals'}
-							<form method="POST" action="?/toggleVisibility">
-								<input type="hidden" name="dealId" value={deal.id} />
-
-								<button
-									type="submit"
-									class:visibility-hidden={!deal.is_visible}
-									class="icon-action"
-									aria-label={deal.is_visible ? 'Deal verstecken' : 'Deal anzeigen'}
-									title={deal.is_visible ? 'Deal verstecken' : 'Deal anzeigen'}
-								>
-									{#if deal.is_visible}
-										<Eye class="h-4 w-4" />
-									{:else}
-										<EyeOff class="h-4 w-4" />
-									{/if}
-								</button>
-							</form>
-
 							<button
 								type="button"
 								onclick={() => goto(`/dashboard/deals/edit/${deal.id}`)}
 								class="icon-action"
-								aria-label="Deal bearbeiten"
-								title="Deal bearbeiten"
+								aria-label="Edit deal"
 							>
 								<Pencil class="h-4 w-4" />
 							</button>
@@ -414,12 +390,12 @@
 		border-radius: 30px;
 		border: 1px solid rgba(255, 255, 255, 0.11);
 		background:
-			linear-gradient(180deg, rgba(20, 36, 80, 0.72), rgba(6, 14, 35, 0.9)),
+			linear-gradient(180deg, rgba(36, 22, 70, 0.72), rgba(15, 11, 31, 0.9)),
 			linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015));
 		padding: 18px;
 		color: white;
 		box-shadow:
-			0 22px 80px -46px rgba(255, 255, 255, 0.45),
+			0 22px 80px -46px rgba(168, 85, 247, 0.45),
 			inset 0 1px 0 rgba(255, 255, 255, 0.12),
 			inset 0 -1px 0 rgba(0, 0, 0, 0.35);
 		transition:
@@ -443,7 +419,7 @@
 				transparent 74%,
 				rgba(255, 255, 255, 0.08)
 			),
-			radial-gradient(circle at 50% -10%, rgba(255, 255, 255, 0.16), transparent 32%);
+			radial-gradient(circle at 50% -10%, rgba(168, 85, 247, 0.18), transparent 32%);
 		opacity: 0.75;
 		mask:
 			linear-gradient(#000, #000) content-box,
@@ -456,29 +432,42 @@
 		mask-composite: exclude;
 	}
 
-	.deal-is-hidden {
-		opacity: 0.55;
-		filter: grayscale(0.55);
+	.deal-card.gold {
+		border-color: rgba(250, 204, 21, 0.45);
+		box-shadow:
+			0 22px 80px -46px rgba(250, 204, 21, 0.5),
+			0 0 34px -18px rgba(250, 204, 21, 0.55),
+			inset 0 1px 0 rgba(255, 255, 255, 0.14),
+			inset 0 -1px 0 rgba(0, 0, 0, 0.35);
 	}
 
-	.visibility-hidden {
-		border-color: rgba(248, 113, 113, 0.25);
-		background: rgba(248, 113, 113, 0.08);
-		color: rgba(252, 165, 165, 0.9);
+	.deal-card.gold:hover {
+		border-color: rgba(250, 204, 21, 0.65);
+		box-shadow:
+			0 30px 100px -48px rgba(250, 204, 21, 0.7),
+			0 0 46px -20px rgba(250, 204, 21, 0.95),
+			inset 0 1px 0 rgba(255, 255, 255, 0.18),
+			inset 0 -1px 0 rgba(0, 0, 0, 0.35);
 	}
 
-	.visibility-hidden:hover {
-		border-color: rgba(248, 113, 113, 0.45);
-		background: rgba(248, 113, 113, 0.14);
-		color: white;
+	.deal-card.gold .deal-orb-left,
+	.deal-card.gold .deal-orb-right {
+		background: rgba(250, 204, 21, 0.28);
+	}
+
+	.deal-card.gold .stat-main {
+		border-color: rgba(250, 204, 21, 0.35);
+		background:
+			linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(250, 204, 21, 0.14)),
+			rgba(0, 0, 0, 0.13);
 	}
 
 	.deal-card:hover {
 		transform: translateY(-4px);
-		border-color: rgba(255, 255, 255, 0.22);
+		border-color: rgba(168, 85, 247, 0.35);
 		box-shadow:
-			0 30px 100px -48px rgba(255, 255, 255, 0.62),
-			0 0 42px -28px rgba(147, 197, 253, 0.9),
+			0 30px 100px -48px rgba(168, 85, 247, 0.62),
+			0 0 42px -28px rgba(168, 85, 247, 0.9),
 			inset 0 1px 0 rgba(255, 255, 255, 0.16),
 			inset 0 -1px 0 rgba(0, 0, 0, 0.35);
 	}
@@ -569,7 +558,7 @@
 		top: 20px;
 		width: 180px;
 		height: 180px;
-		background: rgba(92, 127, 207, 0.28);
+		background: rgba(124, 58, 237, 0.32);
 	}
 
 	.deal-orb-right {
@@ -577,7 +566,7 @@
 		bottom: -80px;
 		width: 230px;
 		height: 230px;
-		background: rgba(255, 255, 255, 0.13);
+		background: rgba(217, 70, 239, 0.16);
 	}
 
 	.brand-panel {
@@ -597,7 +586,7 @@
 				rgba(255, 255, 255, 0.025) 42%,
 				rgba(0, 0, 0, 0.16)
 			),
-			radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.13), transparent 48%);
+			radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.16), transparent 48%);
 		padding: 20px;
 		overflow: hidden;
 		box-shadow:
@@ -635,7 +624,7 @@
 		width: 170px;
 		height: 90px;
 		border-radius: 999px;
-		background: rgba(255, 255, 255, 0.13);
+		background: rgba(168, 85, 247, 0.22);
 		filter: blur(28px);
 		transform: translateX(-50%);
 	}
@@ -712,10 +701,10 @@
 		color: rgba(255, 255, 255, 0.7);
 	}
 
-	.mini-badge-blue {
-		border-color: rgba(147, 197, 253, 0.22);
-		background: rgba(96, 165, 250, 0.4);
-		color: rgba(219, 234, 254, 0.9);
+	.mini-badge-accent {
+		border-color: rgba(168, 85, 247, 0.3);
+		background: rgba(147, 51, 234, 0.4);
+		color: rgba(237, 233, 254, 0.92);
 	}
 
 	.stats-grid {
@@ -765,9 +754,9 @@
 	}
 
 	.stat-main {
-		border-color: rgba(255, 255, 255, 0.16);
+		border-color: rgba(168, 85, 247, 0.24);
 		background:
-			linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(147, 197, 253, 0.055)),
+			linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(147, 51, 234, 0.1)),
 			rgba(0, 0, 0, 0.13);
 	}
 
@@ -834,8 +823,8 @@
 
 	.feature-pill:hover {
 		transform: translateY(-1px);
-		border-color: rgba(255, 255, 255, 0.18);
-		background: rgba(255, 255, 255, 0.075);
+		border-color: rgba(168, 85, 247, 0.32);
+		background: rgba(147, 51, 234, 0.14);
 		color: white;
 	}
 
@@ -922,8 +911,8 @@
 	.icon-action:hover,
 	.delete-action:hover {
 		transform: translateY(-1px);
-		border-color: rgba(255, 255, 255, 0.2);
-		background: rgba(255, 255, 255, 0.085);
+		border-color: rgba(168, 85, 247, 0.32);
+		background: rgba(147, 51, 234, 0.14);
 		color: white;
 	}
 
@@ -956,14 +945,14 @@
 		overflow: hidden;
 		border-radius: 15px;
 		border: 1px solid rgba(255, 255, 255, 0.55);
-		background: linear-gradient(180deg, #ffffff 0%, #d8dce2 44%, #8d949f 100%);
+		background: linear-gradient(180deg, #ffffff 0%, #e2d9f5 44%, #9d7fce 100%);
 		padding: 12px 20px;
 		font-size: 13px;
 		font-weight: 1000;
 		letter-spacing: 0.02em;
-		color: #071026;
+		color: #1b0f36;
 		box-shadow:
-			0 0 22px rgba(255, 255, 255, 0.22),
+			0 0 22px rgba(168, 85, 247, 0.28),
 			inset 0 1px 0 rgba(255, 255, 255, 0.95),
 			inset 0 -1px 0 rgba(0, 0, 0, 0.28);
 		transition:
@@ -999,8 +988,8 @@
 		transform: translateY(-2px);
 		filter: brightness(1.06);
 		box-shadow:
-			0 0 32px rgba(255, 255, 255, 0.36),
-			0 0 50px -28px rgba(147, 197, 253, 0.9),
+			0 0 32px rgba(168, 85, 247, 0.42),
+			0 0 50px -28px rgba(217, 70, 239, 0.9),
 			inset 0 1px 0 rgba(255, 255, 255, 0.95),
 			inset 0 -1px 0 rgba(0, 0, 0, 0.3);
 	}
@@ -1100,8 +1089,8 @@
 	.payment-chip:hover {
 		transform: translateY(-2px) scale(1.025);
 		opacity: 1;
-		border-color: rgba(255, 255, 255, 0.2);
-		background: rgba(255, 255, 255, 0.08);
+		border-color: rgba(168, 85, 247, 0.32);
+		background: rgba(147, 51, 234, 0.14);
 	}
 
 	.payment-image {
@@ -1169,7 +1158,7 @@
 			border-radius: 18px;
 			padding: 9px;
 			box-shadow:
-				0 14px 46px -38px rgba(255, 255, 255, 0.45),
+				0 14px 46px -38px rgba(168, 85, 247, 0.45),
 				inset 0 1px 0 rgba(255, 255, 255, 0.1),
 				inset 0 -1px 0 rgba(0, 0, 0, 0.35);
 		}

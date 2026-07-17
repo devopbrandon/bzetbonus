@@ -25,29 +25,29 @@
 	const socialItems: SocialItem[] = [
 		{
 			label: 'Instagram',
-			href: 'https://instagram.com/smetdown',
+			href: 'https://instagram.com/money4duo',
 			icon: '/images/socials/instagram.svg'
 		},
-		{
-			label: 'Discord',
-			href: 'https://discord.gg/7JmNVQF3cv',
-			icon: '/images/socials/discord.svg'
-		},
-		{
-			label: 'YouTube',
-			href: 'https://youtube.com/@samet777com',
-			icon: '/images/socials/youtube.svg'
-		},
+		// {
+		// 	label: 'Discord',
+		// 	href: 'https://discord.gg/7JmNVQF3cv',
+		// 	icon: '/images/socials/discord.svg'
+		// },
+		// {
+		// 	label: 'YouTube',
+		// 	href: 'https://youtube.com/@samet777com',
+		// 	icon: '/images/socials/youtube.svg'
+		// },
 		{
 			label: 'Twitch',
-			href: 'https://twitch.tv/samet777com',
+			href: 'https://www.twitch.tv/money4duo',
 			icon: '/images/socials/twitch_white.svg'
-		},
-		{
-			label: 'Kick',
-			href: 'https://kick.com/samet777com',
-			icon: '/images/socials/kick.png'
 		}
+		// {
+		// 	label: 'Kick',
+		// 	href: 'https://kick.com/samet777com',
+		// 	icon: '/images/socials/kick.png'
+		// }
 	];
 
 	function toggleSidebar() {
@@ -89,7 +89,7 @@
 
 <aside
 	class={[
-		'fixed left-0 top-0 z-60 flex h-dvh shrink-0 flex-col   border-r border-white/5 bg-[#203266]/90 py-6 shadow-2xl shadow-black/30 backdrop-blur-xl transition-all duration-300 ease-out md:z-40 md:bg-[#203266]/50 md:shadow-none',
+		'fixed left-0 top-0 z-60 flex h-dvh shrink-0 flex-col border-r border-white/5 bg-[#241646]/90 py-6 shadow-2xl shadow-black/30 backdrop-blur-xl transition-all duration-300 ease-out md:z-40 md:bg-[#241646]/50 md:shadow-none',
 		collapsed ? 'md:w-20' : 'md:w-64',
 		mobileOpen ? 'w-72 translate-x-0' : 'w-72 -translate-x-full md:translate-x-0'
 	]}
@@ -211,7 +211,7 @@
 				class="mt-4 hidden items-center gap-1.5 px-1 text-[11px] font-semibold text-white/35 md:flex"
 			>
 				<Copyright size={13} class="shrink-0" />
-				<span>Samet777</span>
+				<span>MoneyDuo</span>
 			</p>
 		{/if}
 	</div>

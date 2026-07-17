@@ -1,18 +1,18 @@
 <section
-	class="relative isolate flex min-h-100 items-center justify-center overflow-hidden px-5 pt-2 sm:min-h-160 lg:min-h-175"
+	class="relative isolate flex min-h-100 items-center justify-center overflow-hidden px-5 pt-2 sm:min-h-160 lg:min-h-120"
 >
 	<div class="relative z-10 flex flex-col items-center text-center">
 		<img
 			src="/logo.png"
-			alt="Samet777"
+			alt="MoneyDuo"
 			draggable="false"
-			class="hero-logo w-[min(78vw,620px)] select-none drop-shadow-[0_28px_48px_rgba(0,0,0,0.5)]"
+			class="hero-logo w-72 select-none drop-shadow-[0_28px_48px_rgba(0,0,0,0.5)]"
 		/>
 
 		<p
-			class="hero-slogan mt-8 font-[varsity] text-2xl sm:text-4xl lg:text-5xl uppercase leading-tight tracking-widest text-white sm:mt-10"
+			class="hero-slogan mt-8 font-[Sora] font-bold text-2xl sm:text-4xl lg:text-5xl uppercase leading-tight tracking-widest text-white sm:mt-10"
 		>
-			{#each ['Bonus', 'Angebote', 'die', 'Du', 'nicht', 'ablehnen', 'kannst!'] as word, i (word)}
+			{#each ['Bonis', 'die', 'du', 'lieben', 'wirst!'] as word, i (word)}
 				<span class="word" style="--i: {i}">{word}&nbsp;</span>
 			{/each}
 		</p>
