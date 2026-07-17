@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-	<title>Bonus Angebote, die Du nicht ablehnen kannst - Samet777.com</title>
+	<title>Bonis die du lieben wirst! - Money4Duo.com</title>
 </svelte:head>
 
 <Hero />

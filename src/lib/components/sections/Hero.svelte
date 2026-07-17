@@ -1,16 +1,16 @@
 <section
-	class="relative isolate flex min-h-100 items-center justify-center overflow-hidden px-5 pt-2 sm:min-h-160 lg:min-h-120"
+	class="relative isolate flex min-h-100 items-center justify-center overflow-hidden px-5 pt-2 sm:min-h-140"
 >
 	<div class="relative z-10 flex flex-col items-center text-center">
 		<img
 			src="/logo.png"
-			alt="MoneyDuo"
+			alt="Money4Duo"
 			draggable="false"
-			class="hero-logo w-72 select-none drop-shadow-[0_28px_48px_rgba(0,0,0,0.5)]"
+			class="hero-logo w-[min(78vw,420px)] select-none drop-shadow-[0_28px_48px_rgba(0,0,0,0.5)]"
 		/>
 
 		<p
-			class="hero-slogan mt-8 font-[Sora] font-bold text-2xl sm:text-4xl lg:text-5xl uppercase leading-tight tracking-widest text-white sm:mt-10"
+			class="hero-slogan mt-8 text-2xl sm:text-4xl lg:text-5xl uppercase leading-tight tracking-wide text-white sm:mt-10"
 		>
 			{#each ['Bonis', 'die', 'du', 'lieben', 'wirst!'] as word, i (word)}
 				<span class="word" style="--i: {i}">{word}&nbsp;</span>
@@ -20,7 +20,6 @@
 </section>
 
 <style>
-	/* ===== Marquee bulb frame ===== */
 	.marquee-frame {
 		--bulb: 26px;
 		--dot: 2.5px;
@@ -40,7 +39,6 @@
 		opacity: 0;
 	}
 
-	/* dim base bulbs, evenly spaced dots */
 	.bulb-strip--top,
 	.bulb-strip--bottom {
 		left: 0;
@@ -74,7 +72,6 @@
 		right: 0;
 	}
 
-	/* the travelling comet, clipped to the same dot pattern so only bulbs light up */
 	.bulb-strip::after {
 		background-image: radial-gradient(circle, rgba(255, 235, 200, 1) 0 1.6px, transparent 2.2px);
 		filter: blur(0.3px) drop-shadow(0 0 6px rgba(var(--amber), 0.9));
@@ -94,7 +91,6 @@
 		background-position: 0 -130px;
 	}
 
-	/* one shared 8s loop, each side "active" for its own quarter, offset by negative delay */
 	.bulb-strip--top::after {
 		animation: chase-x 8s linear infinite;
 		animation-delay: 0s;
@@ -193,7 +189,6 @@
 		}
 	}
 
-	/* frame flickers on once at load, then settles into the chase above */
 	.marquee-frame {
 		animation: frame-ignite 900ms steps(2, end) 150ms both;
 	}
@@ -212,7 +207,6 @@
 		}
 	}
 
-	/* ===== Logo ===== */
 	.hero-logo {
 		animation:
 			logo-in 850ms cubic-bezier(0.16, 1, 0.3, 1) both,
@@ -242,28 +236,55 @@
 		}
 	}
 
-	/* ===== Slogan: words ignite one by one, like neon tubes ===== */
+	.hero-slogan {
+		font-family: 'Bungee', 'Montserrat', sans-serif;
+		letter-spacing: 0.01em;
+	}
+
 	.hero-slogan .word {
 		display: inline-block;
 		opacity: 0;
-		animation: word-ignite 480ms ease forwards;
-		animation-delay: calc(550ms + var(--i) * 110ms);
+		transform-origin: center bottom;
+		animation:
+			word-ignite 480ms ease forwards,
+			word-wobble 4.2s ease-in-out calc(1030ms + var(--i) * 110ms) infinite;
+		animation-delay: calc(550ms + var(--i) * 110ms), calc(1030ms + var(--i) * 110ms);
+		text-shadow:
+			0 3px 0 rgba(0, 0, 0, 0.55),
+			0 0 22px rgba(255, 200, 140, 0.35);
+		-webkit-text-stroke: 1px rgba(0, 0, 0, 0.35);
 	}
 
 	@keyframes word-ignite {
 		0% {
 			opacity: 0;
-			transform: translateY(8px);
+			transform: translateY(10px) scale(0.85) rotate(-3deg);
 			text-shadow: none;
 		}
-		60% {
+		55% {
 			opacity: 1;
-			text-shadow: 0 0 18px rgba(255, 200, 140, 0.55);
+			transform: translateY(-3px) scale(1.06) rotate(1.5deg);
+			text-shadow: 0 0 18px rgba(255, 200, 140, 0.6);
 		}
 		100% {
 			opacity: 1;
-			transform: translateY(0);
-			text-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
+			transform: translateY(0) scale(1) rotate(0deg);
+		}
+	}
+
+	@keyframes word-wobble {
+		0%,
+		100% {
+			transform: translateY(0) rotate(0deg) scale(1);
+		}
+		25% {
+			transform: translateY(-4px) rotate(-1.5deg) scale(1.015);
+		}
+		50% {
+			transform: translateY(0) rotate(0.5deg) scale(1);
+		}
+		75% {
+			transform: translateY(-2px) rotate(1.5deg) scale(1.01);
 		}
 	}
 
