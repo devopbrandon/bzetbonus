@@ -29,7 +29,7 @@
 </script>
 
 <svelte:head>
-	<title>{deal.brand ?? 'Deal'} - SAMET777</title>
+	<title>{deal.brand ?? 'Deal'} - Money4Duo</title>
 	<meta name="description" content={`Alle Details zum ${deal.brand ?? 'Casino'} Bonus Deal.`} />
 </svelte:head>
 
