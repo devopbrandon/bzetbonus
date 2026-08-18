@@ -216,7 +216,7 @@
 </script>
 
 <svelte:head>
-	<title>Add Deal - Samet777</title>
+	<title>Add Deal - Money4Duo</title>
 </svelte:head>
 
 <section class="min-h-[80vh] w-full px-4 py-10 text-white">
@@ -234,7 +234,7 @@
 				<span
 					class="rounded-full bg-indigo-400/15 px-3 py-1 text-xs font-semibold text-indigo-400 ring-1 ring-indigo-400/30"
 				>
-					Samet777
+					Money4Duo
 				</span>
 			</div>
 
@@ -283,7 +283,7 @@
 
 						<input
 							name="promocode"
-							placeholder="e.g. SAMET777"
+							placeholder="e.g. 4DUO"
 							class="w-full rounded-r-xl bg-transparent px-3 py-3 placeholder:text-white/40 focus:outline-none"
 							bind:value={promocode}
 						/>
