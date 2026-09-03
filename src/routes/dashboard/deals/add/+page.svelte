@@ -1,24 +1,28 @@
 <script lang="ts">
 	import {
-		Building2,
-		Percent,
-		Sparkles,
-		Link2,
-		Image as ImageIcon,
-		Euro,
-		Coins,
-		Plus,
-		X,
 		BadgePercent,
-		BookCheck,
-		UploadCloud,
-		PartyPopper,
+		Banknote,
+		Building2,
+		Check,
+		ChevronDown,
+		Code2,
 		CreditCard,
-		NotebookText
+		Euro,
+		FileText,
+		Gift,
+		Image as ImageIcon,
+		Info,
+		Landmark,
+		Link2,
+		Plus,
+		RotateCcw,
+		Sparkles,
+		UploadCloud,
+		X
 	} from 'lucide-svelte';
 
 	import { createBrowserClient } from '@supabase/ssr';
-	import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY } from '$env/static/public';
+	import { PUBLIC_SUPABASE_PUBLISHABLE_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
 
 	const supabase = createBrowserClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY);
 
@@ -36,13 +40,37 @@
 		'BankTransfers'
 	];
 
+	const licenceOptions = [
+		'Anjouan',
+		'Curaçao',
+		'Malta Gaming Authority',
+		'UK Gambling Commission',
+		'Gibraltar',
+		'Isle of Man',
+		'Kahnawake',
+		'Estonia',
+		'Sweden',
+		'Tobique Gaming Commission',
+		'Denmark',
+		'Germany',
+		'Costa Rica',
+		'Offshore',
+		'Keine Lizenz'
+	];
+
+	type BonusType = 'non-sticky' | 'sticky' | 'wagerfree';
+	type WagerType = 'Wagerfree' | 'B' | 'B+D';
+
 	type FormValues = {
 		brand?: string;
+		tagline?: string;
+		licence?: string;
 		bonus?: string;
 		bonustype?: string;
 		maxbet?: string;
 		maxbonus?: string;
 		freespins?: string;
+		freespins_code?: string;
 		logourl?: string;
 		reflink?: string;
 		wager?: string;
@@ -51,45 +79,52 @@
 		payments?: string[];
 		promocode?: string;
 		information?: string;
-		merkur?: boolean;
-		novoline?: boolean;
 	};
 
-	let { form }: { form?: { error?: string; values?: FormValues } } = $props();
+	let {
+		form
+	}: {
+		form?: {
+			error?: string;
+			success?: boolean;
+			values?: FormValues;
+		};
+	} = $props();
 
 	let brand = $state(form?.values?.brand ?? '');
+	let tagline = $state(form?.values?.tagline ?? '');
+	let licence = $state(form?.values?.licence ?? '');
+
 	let bonus = $state(form?.values?.bonus ?? '');
-	let bonustype = $state<'non-sticky' | 'sticky' | 'cashable' | 'wagerfree'>(
-		(form?.values?.bonustype as 'non-sticky' | 'sticky' | 'cashable' | 'wagerfree') ?? 'non-sticky'
-	);
+
+	let bonustype = $state<BonusType>((form?.values?.bonustype as BonusType) ?? 'non-sticky');
 
 	let maxbet = $state(form?.values?.maxbet ?? '');
 	let maxbonus = $state(form?.values?.maxbonus ?? '');
-	let freespins = $state<string | number>(form?.values?.freespins ?? '');
+
+	let freespins = $state(form?.values?.freespins ?? '');
+	let freespinsCode = $state(form?.values?.freespins_code ?? '');
+
+	let wager = $state(form?.values?.wager ?? '');
+
+	let wagertype = $state<WagerType>((form?.values?.wagertype as WagerType) ?? 'Wagerfree');
+
+	let promocode = $state(form?.values?.promocode ?? '');
+	let information = $state(form?.values?.information ?? '');
+	let reflink = $state(form?.values?.reflink ?? '');
 
 	let features = $state<string[]>(
 		Array.isArray(form?.values?.features) ? [...form.values.features] : []
 	);
-	let featureDraft = $state('');
-
-	let logourl = $state(form?.values?.logourl ?? '');
-	let logoPreview = $state('');
-	let reflink = $state(form?.values?.reflink ?? '');
-
-	let wager = $state(form?.values?.wager ?? '');
-	let wagertype = $state<'Wagerfree' | 'Sticky' | 'Non-Sticky' | 'B' | 'B+D'>(
-		(form?.values?.wagertype as 'Wagerfree' | 'Sticky' | 'Non-Sticky' | 'B' | 'B+D') ?? 'Wagerfree'
-	);
-
-	let promocode = $state(form?.values?.promocode ?? '');
-	let information = $state(form?.values?.information ?? '');
 
 	let payments = $state<string[]>(
 		Array.isArray(form?.values?.payments) ? [...form.values.payments] : []
 	);
 
-	let merkur = $state(Boolean(form?.values?.merkur));
-	let novoline = $state(Boolean(form?.values?.novoline));
+	let featureDraft = $state('');
+
+	let logourl = $state(form?.values?.logourl ?? '');
+	let logoPreview = $state('');
 
 	let uploading = $state(false);
 	let uploadError = $state('');
@@ -98,6 +133,7 @@
 
 	function addFeature() {
 		const value = featureDraft.trim();
+
 		if (!value) return;
 
 		if (!features.includes(value)) {
@@ -133,17 +169,17 @@
 
 	async function onPickLogo(event: Event) {
 		const input = event.target as HTMLInputElement;
-		const file = input?.files?.[0];
+		const file = input.files?.[0];
 
 		if (!file) return;
 
 		if (!file.type.startsWith('image/')) {
-			uploadError = 'Please select an image file.';
+			uploadError = 'Bitte wähle eine Bilddatei aus.';
 			return;
 		}
 
 		if (file.size > 2 * 1024 * 1024) {
-			uploadError = 'File is larger than 2 MB.';
+			uploadError = 'Die Datei darf maximal 2 MB groß sein.';
 			return;
 		}
 
@@ -158,8 +194,14 @@
 
 		try {
 			const ext = getExtFromFile(file);
-			const safeBrand = (brand || 'brand').toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
-			const path = `logos/${safeBrand}-${Date.now()}.${ext}`;
+
+			const safeBrand = (brand || 'brand')
+				.toLowerCase()
+				.trim()
+				.replace(/[^a-z0-9_-]+/g, '-')
+				.replace(/^-+|-+$/g, '');
+
+			const path = `logos/${safeBrand || 'brand'}-${Date.now()}.${ext}`;
 
 			const { error } = await supabase.storage.from('deals-logos').upload(path, file, {
 				cacheControl: '3600',
@@ -170,10 +212,12 @@
 			if (error) throw error;
 
 			const { data } = supabase.storage.from('deals-logos').getPublicUrl(path);
+
 			logourl = data.publicUrl;
 		} catch (error: any) {
-			console.error(error);
-			uploadError = error?.message ?? 'Upload failed.';
+			console.error('LOGO UPLOAD ERROR:', error);
+
+			uploadError = error?.message ?? 'Logo konnte nicht hochgeladen werden.';
 		} finally {
 			uploading = false;
 
@@ -185,11 +229,28 @@
 
 	function resetForm() {
 		brand = '';
+		tagline = '';
+		licence = '';
+
 		bonus = '';
+		bonustype = 'non-sticky';
+
 		maxbet = '';
 		maxbonus = '';
+
 		freespins = '';
+		freespinsCode = '';
+
+		wager = '';
+		wagertype = 'Wagerfree';
+
+		promocode = '';
+		reflink = '';
+		information = '';
+
 		features = [];
+		payments = [];
+
 		featureDraft = '';
 
 		if (logoPreview) {
@@ -198,16 +259,8 @@
 
 		logourl = '';
 		logoPreview = '';
-		reflink = '';
-		wager = '';
-		bonustype = 'non-sticky';
-		wagertype = 'Wagerfree';
+
 		uploadError = '';
-		promocode = '';
-		information = '';
-		payments = [];
-		merkur = false;
-		novoline = false;
 
 		if (fileEl) {
 			fileEl.value = '';
@@ -216,432 +269,723 @@
 </script>
 
 <svelte:head>
-	<title>Add Deal - Money4Duo</title>
+	<title>Deal hinzufügen | BZETBONUS</title>
 </svelte:head>
 
-<section class="min-h-[80vh] w-full px-4 py-10 text-white">
-	<div class="mx-auto w-full max-w-3xl">
-		<form
-			method="POST"
-			class="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl ring-1 ring-white/5 backdrop-blur-md"
-		>
-			<div class="mb-6 flex items-center justify-between gap-4">
-				<h1 class="flex items-center gap-2 text-2xl font-bold">
-					<Sparkles class="text-indigo-400" />
-					<span>Add Deal</span>
+<section class="min-h-[calc(100vh-68px)] px-4 py-8 text-white sm:px-6 lg:py-10">
+	<div class="mx-auto w-full max-w-[1180px]">
+		<div class="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+			<div>
+				<div class="mb-3 flex items-center gap-2">
+					<div
+						class="flex h-7 w-7 items-center justify-center rounded-lg border border-[#8dc7ff]/10 bg-[#8dc7ff]/[0.07]"
+					>
+						<Sparkles size={14} strokeWidth={2} class="text-[#9fd0ff]" />
+					</div>
+
+					<span class="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9fd0ff]/55">
+						BZETBONUS Admin
+					</span>
+				</div>
+
+				<h1 class="text-[30px] font-black tracking-[-0.04em] text-white sm:text-[38px]">
+					Neuen Deal anlegen
 				</h1>
 
-				<span
-					class="rounded-full bg-indigo-400/15 px-3 py-1 text-xs font-semibold text-indigo-400 ring-1 ring-indigo-400/30"
-				>
-					Money4Duo
-				</span>
+				<p class="mt-2 max-w-[620px] text-[13px] leading-6 text-white/35">
+					Alle relevanten Angaben für Deal, Bonusbedingungen und Darstellung.
+				</p>
 			</div>
 
-			{#if form?.error}
-				<div
-					class="mb-6 rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-200"
-				>
-					{form.error}
-				</div>
-			{/if}
+			<div
+				class="inline-flex items-center gap-2 self-start rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 py-2 sm:self-auto"
+			>
+				<div class="h-1.5 w-1.5 rounded-full bg-emerald-400"></div>
+				<span class="text-[11px] font-semibold text-white/40">Deal Editor</span>
+			</div>
+		</div>
 
-			<div class="mb-6 space-y-4">
-				<h2 class="flex items-center gap-2 text-lg font-semibold text-indigo-400">
-					<Building2 class="h-5 w-5" /> Basic Information
-				</h2>
+		{#if form?.error}
+			<div
+				class="mb-6 flex items-start gap-3 rounded-xl border border-red-400/15 bg-red-500/[0.055] px-4 py-3 text-[13px] text-red-200"
+			>
+				<Info size={17} strokeWidth={2} class="mt-0.5 shrink-0 text-red-300" />
+				<span>{form.error}</span>
+			</div>
+		{/if}
 
-				<label class="block">
-					<span class="mb-1 block text-sm text-white/80">Brand*</span>
+		{#if form?.success}
+			<div
+				class="mb-6 flex items-center gap-3 rounded-xl border border-emerald-400/15 bg-emerald-500/[0.055] px-4 py-3 text-[13px] text-emerald-200"
+			>
+				<Check size={17} strokeWidth={2.2} class="shrink-0" />
+				Deal wurde erfolgreich gespeichert.
+			</div>
+		{/if}
 
-					<div
-						class="group flex items-center rounded-xl border border-white/10 bg-black/30 transition focus-within:border-indigo-400/60 focus-within:ring-1 focus-within:ring-indigo-400/60"
-					>
-						<span class="pr-2 pl-3 text-white/60 group-focus-within:text-indigo-400">
-							<Building2 class="h-5 w-5" />
-						</span>
+		<form method="POST">
+			<div class="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_350px]">
+				<div class="space-y-5">
+					<section class="admin-card">
+						<div class="section-head">
+							<div class="section-icon">
+								<Building2 size={17} strokeWidth={2} />
+							</div>
 
-						<input
-							name="brand"
-							placeholder="e.g. Stake"
-							class="w-full rounded-r-xl bg-transparent px-3 py-3 placeholder:text-white/40 focus:outline-none"
-							bind:value={brand}
-							required
-						/>
-					</div>
-				</label>
-
-				<label class="block">
-					<span class="mb-1 block text-sm text-white/80">Promo Code</span>
-
-					<div
-						class="group flex items-center rounded-xl border border-white/10 bg-black/30 transition focus-within:border-indigo-400/60 focus-within:ring-1 focus-within:ring-indigo-400/60"
-					>
-						<span class="pr-2 pl-3 text-white/60 group-focus-within:text-indigo-400">
-							<PartyPopper class="h-5 w-5" />
-						</span>
-
-						<input
-							name="promocode"
-							placeholder="e.g. 4DUO"
-							class="w-full rounded-r-xl bg-transparent px-3 py-3 placeholder:text-white/40 focus:outline-none"
-							bind:value={promocode}
-						/>
-					</div>
-				</label>
-
-				<div class="grid gap-4 sm:grid-cols-2">
-					<label class="block">
-						<span class="mb-1 block text-sm text-white/80">Bonus*</span>
-
-						<div
-							class="group flex items-center rounded-xl border border-white/10 bg-black/30 transition focus-within:border-indigo-400/60 focus-within:ring-1 focus-within:ring-indigo-400/60"
-						>
-							<span class="pr-2 pl-3 text-white/60 group-focus-within:text-indigo-400">
-								<Percent class="h-5 w-5" />
-							</span>
-
-							<input
-								name="bonus"
-								placeholder="e.g. 200%"
-								class="w-full rounded-r-xl bg-transparent px-3 py-3 placeholder:text-white/40 focus:outline-none"
-								bind:value={bonus}
-								required
-							/>
+							<div>
+								<h2>Casino & Darstellung</h2>
+								<p>Grundlegende Informationen, die der User zuerst sieht.</p>
+							</div>
 						</div>
-					</label>
 
-					<label class="block">
-						<span class="mb-1 block text-sm text-white/80">Bonus Type</span>
+						<div class="grid gap-4 sm:grid-cols-2">
+							<label class="field">
+								<span class="field-label">Casino *</span>
 
-						<div
-							class="group flex items-center rounded-xl border border-white/10 bg-black/30 transition focus-within:border-indigo-400/60 focus-within:ring-1 focus-within:ring-indigo-400/60"
-						>
-							<span class="pr-2 pl-3 text-white/60 group-focus-within:text-indigo-400">
-								<BadgePercent class="h-5 w-5" />
-							</span>
+								<div class="input-shell">
+									<div class="input-icon-wrap">
+										<Building2 size={16} strokeWidth={1.8} />
+									</div>
 
-							<select
-								name="bonustype"
-								class="w-full rounded-r-xl bg-transparent px-3 py-3 text-white focus:outline-none"
-								bind:value={bonustype}
+									<input name="brand" placeholder="z. B. Stake" bind:value={brand} required />
+								</div>
+							</label>
+
+							<label class="field">
+								<span class="field-label">Tagline</span>
+
+								<div class="input-shell">
+									<div class="input-icon-wrap">
+										<Sparkles size={16} strokeWidth={1.8} />
+									</div>
+
+									<input
+										name="tagline"
+										placeholder="z. B. Bzets persönlicher Favorit"
+										bind:value={tagline}
+									/>
+								</div>
+
+								<span class="field-hint">Kurzer Satz direkt beim Deal.</span>
+							</label>
+
+							<label class="field sm:col-span-2">
+								<span class="field-label">Lizenz</span>
+
+								<div class="input-shell">
+									<div class="input-icon-wrap">
+										<Landmark size={16} strokeWidth={1.8} />
+									</div>
+
+									<select name="licence" bind:value={licence}>
+										<option value="">Keine Auswahl</option>
+
+										{#each licenceOptions as option}
+											<option value={option}>{option}</option>
+										{/each}
+									</select>
+
+									<div class="select-arrow-wrap">
+										<ChevronDown size={14} strokeWidth={1.8} />
+									</div>
+								</div>
+							</label>
+						</div>
+					</section>
+
+					<section class="admin-card">
+						<div class="section-head">
+							<div class="section-icon">
+								<Gift size={17} strokeWidth={2} />
+							</div>
+
+							<div>
+								<h2>Bonus</h2>
+								<p>Bonuswert, Typ und Freispiel-Angebot.</p>
+							</div>
+						</div>
+
+						<div class="grid gap-4 sm:grid-cols-2">
+							<label class="field">
+								<span class="field-label">Bonus *</span>
+
+								<div class="input-shell">
+									<div class="input-icon-wrap">
+										<BadgePercent size={16} strokeWidth={1.8} />
+									</div>
+
+									<input name="bonus" placeholder="z. B. 200%" bind:value={bonus} required />
+								</div>
+							</label>
+
+							<label class="field">
+								<span class="field-label">Bonus Typ</span>
+
+								<div class="input-shell">
+									<div class="input-icon-wrap">
+										<BadgePercent size={16} strokeWidth={1.8} />
+									</div>
+
+									<select name="bonustype" bind:value={bonustype}>
+										<option value="non-sticky">Non-Sticky</option>
+										<option value="sticky">Sticky</option>
+										<option value="wagerfree">Wagerfree</option>
+									</select>
+
+									<div class="select-arrow-wrap">
+										<ChevronDown size={14} strokeWidth={1.8} />
+									</div>
+								</div>
+							</label>
+
+							<label class="field">
+								<span class="field-label">Max. Bonus</span>
+
+								<div class="input-shell">
+									<div class="input-icon-wrap">
+										<Euro size={16} strokeWidth={1.8} />
+									</div>
+
+									<input name="maxbonus" placeholder="z. B. 1.000 €" bind:value={maxbonus} />
+								</div>
+							</label>
+
+							<label class="field">
+								<span class="field-label">Max. Einsatz</span>
+
+								<div class="input-shell">
+									<div class="input-icon-wrap">
+										<Banknote size={16} strokeWidth={1.8} />
+									</div>
+
+									<input name="maxbet" placeholder="z. B. 5 €" bind:value={maxbet} />
+								</div>
+							</label>
+
+							<label class="field">
+								<span class="field-label">Free Spins</span>
+
+								<div class="input-shell">
+									<div class="input-icon-wrap">
+										<Gift size={16} strokeWidth={1.8} />
+									</div>
+
+									<input name="freespins" placeholder="z. B. 150" bind:value={freespins} />
+								</div>
+							</label>
+
+							<label class="field">
+								<span class="field-label">Free Spins Code</span>
+
+								<div class="input-shell">
+									<div class="input-icon-wrap">
+										<Code2 size={16} strokeWidth={1.8} />
+									</div>
+
+									<input
+										name="freespins_code"
+										placeholder="z. B. BZETFS"
+										bind:value={freespinsCode}
+									/>
+								</div>
+							</label>
+						</div>
+					</section>
+
+					<section class="admin-card">
+						<div class="section-head">
+							<div class="section-icon">
+								<FileText size={17} strokeWidth={2} />
+							</div>
+
+							<div>
+								<h2>Umsatzbedingungen</h2>
+								<p>Wie der Bonus umgesetzt werden muss.</p>
+							</div>
+						</div>
+
+						<div class="grid gap-4 sm:grid-cols-2">
+							<label class="field">
+								<span class="field-label">Wager</span>
+
+								<div class="input-shell">
+									<div class="input-icon-wrap">
+										<BadgePercent size={16} strokeWidth={1.8} />
+									</div>
+
+									<input name="wager" placeholder="z. B. 0x / 30x" bind:value={wager} />
+								</div>
+							</label>
+
+							<label class="field">
+								<span class="field-label">Wager Typ</span>
+
+								<div class="input-shell">
+									<div class="input-icon-wrap">
+										<FileText size={16} strokeWidth={1.8} />
+									</div>
+
+									<select name="wagertype" bind:value={wagertype}>
+										<option value="Wagerfree">Wagerfree</option>
+										<option value="B">Bonus</option>
+										<option value="B+D">Bonus + Einzahlung</option>
+									</select>
+
+									<div class="select-arrow-wrap">
+										<ChevronDown size={14} strokeWidth={1.8} />
+									</div>
+								</div>
+							</label>
+						</div>
+					</section>
+
+					<section class="admin-card">
+						<div class="section-head">
+							<div class="section-icon">
+								<Code2 size={17} strokeWidth={2} />
+							</div>
+
+							<div>
+								<h2>Promo & Tracking</h2>
+								<p>Promocode und Affiliate-Link des Deals.</p>
+							</div>
+						</div>
+
+						<div class="grid gap-4 sm:grid-cols-2">
+							<label class="field">
+								<span class="field-label">Promocode</span>
+
+								<div class="input-shell">
+									<div class="input-icon-wrap">
+										<Code2 size={16} strokeWidth={1.8} />
+									</div>
+
+									<input name="promocode" placeholder="z. B. BZET" bind:value={promocode} />
+								</div>
+							</label>
+
+							<label class="field">
+								<span class="field-label">Referral Link</span>
+
+								<div class="input-shell">
+									<div class="input-icon-wrap">
+										<Link2 size={16} strokeWidth={1.8} />
+									</div>
+
+									<input name="reflink" type="url" placeholder="https://..." bind:value={reflink} />
+								</div>
+							</label>
+						</div>
+					</section>
+
+					<section class="admin-card">
+						<div class="section-head">
+							<div class="section-icon">
+								<CreditCard size={17} strokeWidth={2} />
+							</div>
+
+							<div>
+								<h2>Zahlungsmethoden</h2>
+								<p>Verfügbare Zahlungsarten des Anbieters.</p>
+							</div>
+						</div>
+
+						<input type="hidden" name="payments" value={JSON.stringify(payments)} />
+
+						<div class="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+							{#each paymentOptions as payment}
+								<button
+									type="button"
+									onclick={() => togglePayment(payment)}
+									class={[
+										'flex min-h-[44px] cursor-pointer items-center justify-between gap-2 rounded-xl border px-3 text-left text-[12px] font-semibold transition-all duration-200',
+										payments.includes(payment)
+											? 'border-[#8dc7ff]/25 bg-[#8dc7ff]/[0.09] text-[#cde7ff]'
+											: 'border-white/[0.07] bg-black/20 text-white/42 hover:border-white/[0.12] hover:bg-white/[0.035] hover:text-white/75'
+									]}
+								>
+									<span>{payment}</span>
+
+									{#if payments.includes(payment)}
+										<div
+											class="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#9fd0ff] text-[#07101a]"
+										>
+											<Check size={11} strokeWidth={3} />
+										</div>
+									{/if}
+								</button>
+							{/each}
+						</div>
+					</section>
+
+					<section class="admin-card">
+						<div class="section-head">
+							<div class="section-icon">
+								<Sparkles size={17} strokeWidth={2} />
+							</div>
+
+							<div>
+								<h2>Deal Highlights</h2>
+								<p>Kurze Vorteile, die direkt am Angebot angezeigt werden.</p>
+							</div>
+						</div>
+
+						<input type="hidden" name="features" value={JSON.stringify(features)} />
+
+						<div class="flex gap-2">
+							<div class="input-shell flex-1">
+								<div class="input-icon-wrap">
+									<Sparkles size={16} strokeWidth={1.8} />
+								</div>
+
+								<input
+									placeholder="z. B. Schnelle Auszahlungen"
+									bind:value={featureDraft}
+									onkeydown={(event: KeyboardEvent) => {
+										if (event.key === 'Enter') {
+											event.preventDefault();
+											addFeature();
+										}
+									}}
+								/>
+							</div>
+
+							<button
+								type="button"
+								onclick={addFeature}
+								class="flex h-[46px] shrink-0 cursor-pointer items-center gap-2 rounded-xl bg-white px-4 text-[12px] font-bold text-black transition hover:bg-[#edf5ff]"
 							>
-								<option class="bg-zinc-900" value="non-sticky">non-sticky</option>
-								<option class="bg-zinc-900" value="sticky">sticky</option>
-								<option class="bg-zinc-900" value="wagerfree">wagerfree</option>
-							</select>
+								<Plus size={15} strokeWidth={2.4} />
+								<span class="hidden sm:inline">Hinzufügen</span>
+							</button>
 						</div>
-					</label>
-				</div>
-			</div>
 
-			<div class="mb-6 space-y-4">
-				<h2 class="flex items-center gap-2 text-lg font-semibold text-indigo-400">
-					<Coins class="h-5 w-5" /> Limits & Values
-				</h2>
+						{#if features.length}
+							<div class="mt-3 flex flex-wrap gap-2">
+								{#each features as feature}
+									<div
+										class="flex items-center gap-2 rounded-lg border border-[#8dc7ff]/10 bg-[#8dc7ff]/[0.055] py-1.5 pl-2.5 pr-1.5 text-[11px] font-semibold text-white/65"
+									>
+										<span>{feature}</span>
 
-				<div class="grid gap-4 sm:grid-cols-2">
-					<label class="block">
-						<span class="mb-1 block text-sm text-white/80">Max Bonus</span>
+										<button
+											type="button"
+											onclick={() => removeFeature(feature)}
+											aria-label={`${feature} entfernen`}
+											class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-white/25 transition hover:bg-white/[0.06] hover:text-white"
+										>
+											<X size={12} strokeWidth={2} />
+										</button>
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</section>
 
-						<div
-							class="group flex items-center rounded-xl border border-white/10 bg-black/30 transition focus-within:border-indigo-400/60 focus-within:ring-1 focus-within:ring-indigo-400/60"
-						>
-							<span class="pr-2 pl-3 text-white/60 group-focus-within:text-indigo-400">
-								<Euro class="h-5 w-5" />
-							</span>
+					<section class="admin-card">
+						<div class="section-head">
+							<div class="section-icon">
+								<Info size={17} strokeWidth={2} />
+							</div>
 
-							<input
-								name="maxbonus"
-								placeholder="e.g. €1,000"
-								class="w-full rounded-r-xl bg-transparent px-3 py-3 placeholder:text-white/40 focus:outline-none"
-								bind:value={maxbonus}
-							/>
+							<div>
+								<h2>Weitere Informationen</h2>
+								<p>Zusätzliche Hinweise und Besonderheiten zum Deal.</p>
+							</div>
 						</div>
-					</label>
 
-					<label class="block">
-						<span class="mb-1 block text-sm text-white/80">Max Bet</span>
+						<label class="field">
+							<span class="field-label">Information</span>
 
-						<div
-							class="group flex items-center rounded-xl border border-white/10 bg-black/30 transition focus-within:border-indigo-400/60 focus-within:ring-1 focus-within:ring-indigo-400/60"
-						>
-							<span class="pr-2 pl-3 text-white/60 group-focus-within:text-indigo-400">
-								<Euro class="h-5 w-5" />
-							</span>
-
-							<input
-								name="maxbet"
-								placeholder="e.g. €5"
-								class="w-full rounded-r-xl bg-transparent px-3 py-3 placeholder:text-white/40 focus:outline-none"
-								bind:value={maxbet}
-							/>
-						</div>
-					</label>
-
-					<label class="block">
-						<span class="mb-1 block text-sm text-white/80">Free Spins</span>
-
-						<div
-							class="group flex items-center rounded-xl border border-white/10 bg-black/30 transition focus-within:border-indigo-400/60 focus-within:ring-1 focus-within:ring-indigo-400/60"
-						>
-							<span class="pr-2 pl-3 text-white/60 group-focus-within:text-indigo-400">
-								<Percent class="h-5 w-5" />
-							</span>
-
-							<input
-								name="freespins"
-								placeholder="e.g. 150"
-								class="w-full rounded-r-xl bg-transparent px-3 py-3 placeholder:text-white/40 focus:outline-none"
-								bind:value={freespins}
-							/>
-						</div>
-					</label>
+							<textarea
+								name="information"
+								rows="6"
+								placeholder="Bedingungen, Besonderheiten oder wichtige Hinweise..."
+								bind:value={information}
+								class="textarea-field"></textarea>
+						</label>
+					</section>
 				</div>
 
-				<div class="grid gap-4 sm:grid-cols-2">
-					<label class="block">
-						<span class="mb-1 block text-sm text-white/80">Wager</span>
+				<div class="space-y-5 xl:sticky xl:top-[88px]">
+					<section class="admin-card">
+						<div class="section-head compact">
+							<div class="section-icon">
+								<ImageIcon size={17} strokeWidth={2} />
+							</div>
+
+							<div>
+								<h2>Casino Logo</h2>
+								<p>Transparentes PNG oder WebP empfohlen.</p>
+							</div>
+						</div>
 
 						<div
-							class="group flex items-center rounded-xl border border-white/10 bg-black/30 transition focus-within:border-indigo-400/60 focus-within:ring-1 focus-within:ring-indigo-400/60"
+							class="flex min-h-[150px] items-center justify-center rounded-xl border border-dashed border-white/[0.09] bg-black/20 p-5"
 						>
-							<span class="pr-2 pl-3 text-white/60 group-focus-within:text-indigo-400">
-								<BookCheck class="h-5 w-5" />
-							</span>
+							{#if logoPreview || logourl}
+								<img
+									src={logoPreview || logourl}
+									alt="Logo Vorschau"
+									class="max-h-[90px] max-w-[220px] object-contain"
+								/>
+							{:else}
+								<div class="text-center">
+									<ImageIcon size={26} strokeWidth={1.5} class="mx-auto text-white/15" />
 
-							<input
-								name="wager"
-								placeholder="e.g. 0x / 30x"
-								class="w-full rounded-r-xl bg-transparent px-3 py-3 placeholder:text-white/40 focus:outline-none"
-								bind:value={wager}
-							/>
+									<p class="mt-3 text-[11px] font-medium text-white/25">Noch kein Logo</p>
+								</div>
+							{/if}
 						</div>
-					</label>
-
-					<label class="block">
-						<span class="mb-1 block text-sm text-white/80">Wager Type</span>
-
-						<div
-							class="group flex items-center rounded-xl border border-white/10 bg-black/30 transition focus-within:border-indigo-400/60 focus-within:ring-1 focus-within:ring-indigo-400/60"
-						>
-							<span class="pr-2 pl-3 text-white/60 group-focus-within:text-indigo-400">
-								<BadgePercent class="h-5 w-5" />
-							</span>
-
-							<select
-								name="wagertype"
-								class="w-full rounded-r-xl bg-transparent px-3 py-3 text-white focus:outline-none"
-								bind:value={wagertype}
-							>
-								<option class="bg-zinc-900" value="Wagerfree">Wagerfree</option>
-								<option class="bg-zinc-900" value="B">Bonus</option>
-								<option class="bg-zinc-900" value="B+D">Bonus + Deposit</option>
-							</select>
-						</div>
-					</label>
-				</div>
-			</div>
-
-			<div class="mb-6 space-y-4">
-				<h2 class="flex items-center gap-2 text-lg font-semibold text-indigo-400">
-					<ImageIcon class="h-5 w-5" /> Media & Links
-				</h2>
-
-				<div class="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-					<label class="block">
-						<span class="mb-1 block text-sm text-white/80">Logo File</span>
 
 						<input
 							bind:this={fileEl}
 							type="file"
 							accept="image/*"
-							class="w-full cursor-pointer rounded-xl border border-white/10 bg-black/30 px-3 py-3 file:mr-4 file:cursor-pointer file:rounded-lg file:border-0 file:bg-indigo-400 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:brightness-110"
+							class="hidden"
 							onchange={onPickLogo}
 						/>
 
-						{#if uploadError}
-							<p class="mt-2 text-sm text-red-400">{uploadError}</p>
-						{/if}
-					</label>
-
-					<button
-						type="button"
-						disabled={uploading}
-						class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-indigo-400 px-4 py-2 font-semibold text-white ring-1 ring-black/10 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-						onclick={() => fileEl?.click()}
-					>
-						<UploadCloud class="h-5 w-5" />
-						{uploading ? 'Uploading…' : 'Upload'}
-					</button>
-				</div>
-
-				<label class="block">
-					<span class="mb-1 block text-sm text-white/80">Logo URL (public)</span>
-
-					<div
-						class="group flex items-center rounded-xl border border-white/10 bg-black/30 transition focus-within:border-indigo-400/60 focus-within:ring-1 focus-within:ring-indigo-400/60"
-					>
-						<span class="pr-2 pl-3 text-white/60 group-focus-within:text-indigo-400">
-							<ImageIcon class="h-5 w-5" />
-						</span>
-
-						<input
-							name="logourl"
-							placeholder="https://…"
-							class="w-full rounded-r-xl bg-transparent px-3 py-3 placeholder:text-white/40 focus:outline-none"
-							bind:value={logourl}
-							readonly
-						/>
-					</div>
-				</label>
-
-				{#if logoPreview || logourl}
-					<div class="rounded-xl border border-white/10 bg-black/30 p-3">
-						<img
-							src={logoPreview || logourl}
-							alt="Logo Preview"
-							class="h-12 max-w-full object-contain"
-						/>
-					</div>
-				{/if}
-
-				<label class="block">
-					<span class="mb-1 block text-sm text-white/80">Deal URL</span>
-
-					<div
-						class="group flex items-center rounded-xl border border-white/10 bg-black/30 transition focus-within:border-indigo-400/60 focus-within:ring-1 focus-within:ring-indigo-400/60"
-					>
-						<span class="pr-2 pl-3 text-white/60 group-focus-within:text-indigo-400">
-							<Link2 class="h-5 w-5" />
-						</span>
-
-						<input
-							name="reflink"
-							placeholder="Your referral link"
-							class="w-full rounded-r-xl bg-transparent px-3 py-3 placeholder:text-white/40 focus:outline-none"
-							bind:value={reflink}
-						/>
-					</div>
-				</label>
-			</div>
-
-			<div class="mb-8 space-y-4">
-				<h2 class="flex items-center gap-2 text-lg font-semibold text-indigo-400">
-					<CreditCard class="h-5 w-5" /> Payments
-				</h2>
-
-				<input type="hidden" name="payments" value={JSON.stringify(payments)} />
-
-				<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-					{#each paymentOptions as payment}
 						<button
 							type="button"
-							onclick={() => togglePayment(payment)}
-							class={[
-								'cursor-pointer rounded-xl border px-3 py-3 text-left text-sm font-semibold transition',
-								payments.includes(payment)
-									? 'border-indigo-400/60 bg-indigo-400/15 text-indigo-200 shadow-[0_0_18px_rgba(129,140,248,0.20)]'
-									: 'border-white/10 bg-black/30 text-white/75 hover:border-white/20 hover:bg-white/[0.06]'
-							]}
+							disabled={uploading}
+							onclick={() => fileEl?.click()}
+							class="mt-3 flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.035] text-[12px] font-semibold text-white/60 transition hover:border-white/[0.13] hover:bg-white/[0.055] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
 						>
-							{payment}
+							<UploadCloud size={16} strokeWidth={2} />
+
+							{uploading ? 'Wird hochgeladen...' : 'Logo auswählen'}
 						</button>
-					{/each}
-				</div>
 
-				{#if payments.length}
-					<p class="text-xs text-white/50">Selected: {payments.join(', ')}</p>
-				{/if}
-			</div>
+						{#if uploadError}
+							<p class="mt-2 text-[11px] leading-5 text-red-300/80">
+								{uploadError}
+							</p>
+						{/if}
 
-			<div class="mb-8 space-y-4">
-				<h2 class="flex items-center gap-2 text-lg font-semibold text-indigo-400">
-					<Sparkles class="h-5 w-5" /> Features
-				</h2>
+						<input type="hidden" name="logourl" value={logourl} />
+					</section>
 
-				<input type="hidden" name="features" value={JSON.stringify(features)} />
+					<section class="rounded-2xl border border-[#8dc7ff]/[0.10] bg-[#8dc7ff]/[0.035] p-4">
+						<p class="text-[11px] leading-5 text-white/30">
+							Prüfe Bonus, Wager und Tracking-Link vor dem Speichern noch einmal.
+						</p>
 
-				<div class="flex items-center gap-2">
-					<input
-						class="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 placeholder:text-white/40 focus:border-indigo-400/60 focus:ring-1 focus:ring-indigo-400/60 focus:outline-none"
-						placeholder="e.g. No Wagering"
-						bind:value={featureDraft}
-						onkeydown={(event: KeyboardEvent) =>
-							event.key === 'Enter' && (event.preventDefault(), addFeature())}
-					/>
-
-					<button
-						type="button"
-						onclick={addFeature}
-						class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-indigo-400 px-4 py-2 font-semibold text-white ring-1 ring-black/10 transition hover:brightness-110"
-					>
-						<Plus class="h-4 w-4" /> Add
-					</button>
-				</div>
-
-				{#if features.length}
-					<ul class="mt-2 flex flex-wrap gap-2">
-						{#each features as feature}
-							<li
-								class="inline-flex items-center gap-2 rounded-lg bg-black/30 px-2.5 py-1 text-xs text-white/90 ring-1 ring-white/10"
+						<div class="mt-4 grid grid-cols-[auto_1fr] gap-2">
+							<button
+								type="reset"
+								onclick={resetForm}
+								class="flex h-11 cursor-pointer items-center justify-center rounded-xl border border-white/[0.08] bg-black/20 px-4 text-white/40 transition hover:bg-white/[0.04] hover:text-white/75"
+								aria-label="Formular zurücksetzen"
 							>
-								{feature}
+								<RotateCcw size={16} strokeWidth={1.9} />
+							</button>
 
-								<button
-									type="button"
-									class="cursor-pointer rounded p-1 text-white/60 transition hover:text-indigo-400"
-									onclick={() => removeFeature(feature)}
-									aria-label={`Remove feature ${feature}`}
-								>
-									<X class="h-3.5 w-3.5" />
-								</button>
-							</li>
-						{/each}
-					</ul>
-				{/if}
-			</div>
-
-			<div class="mb-8 space-y-4">
-				<h2 class="flex items-center gap-2 text-lg font-semibold text-indigo-400">
-					<NotebookText class="h-5 w-5" /> Notes
-				</h2>
-
-				<label class="block">
-					<span class="mb-1 block text-sm text-white/80">Information</span>
-
-					<textarea
-						name="information"
-						rows="5"
-						placeholder="Add notes, important terms, payout info, bonus details..."
-						class="min-h-32 w-full resize-y rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-white placeholder:text-white/40 focus:border-indigo-400/60 focus:ring-1 focus:ring-indigo-400/60 focus:outline-none"
-						bind:value={information}></textarea>
-				</label>
-			</div>
-
-			<input type="hidden" name="merkur" value={merkur ? 'true' : 'false'} />
-			<input type="hidden" name="novoline" value={novoline ? 'true' : 'false'} />
-
-			<div class="flex flex-col items-center justify-between gap-3 sm:flex-row">
-				<p class="text-xs text-white/60">Resetting will clear everything.</p>
-
-				<div class="flex items-center gap-2">
-					<button
-						type="reset"
-						class="cursor-pointer rounded-xl border border-white/10 bg-black/30 px-4 py-2 text-sm text-white/90 transition hover:bg-black/40"
-						onclick={resetForm}
-					>
-						Reset
-					</button>
-
-					<button
-						type="submit"
-						class="cursor-pointer rounded-xl bg-linear-to-r from-indigo-400 via-indigo-400 to-indigo-300 px-6 py-2.5 text-sm font-extrabold tracking-wide text-white shadow-[0_0_22px_rgba(129,140,248,0.35)] ring-1 ring-indigo-400/30 transition hover:shadow-[0_0_36px_rgba(129,140,248,0.55)] hover:brightness-110"
-					>
-						Save
-					</button>
+							<button
+								type="submit"
+								class="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-white px-5 text-[12px] font-black text-[#090b0e] shadow-[0_8px_30px_rgba(0,0,0,0.24)] transition hover:bg-[#edf5ff]"
+							>
+								<Check size={16} strokeWidth={2.4} />
+								Deal speichern
+							</button>
+						</div>
+					</section>
 				</div>
 			</div>
 		</form>
 	</div>
 </section>
+
+<style>
+	.admin-card {
+		border: 1px solid rgba(255, 255, 255, 0.07);
+		border-radius: 16px;
+		background:
+			linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0%, rgba(255, 255, 255, 0.012) 100%),
+			rgba(10, 12, 16, 0.72);
+		padding: 20px;
+		box-shadow:
+			inset 0 1px 0 rgba(255, 255, 255, 0.015),
+			0 12px 40px rgba(0, 0, 0, 0.12);
+	}
+
+	.section-head {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+		margin-bottom: 20px;
+		padding-bottom: 16px;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+	}
+
+	.section-head.compact {
+		margin-bottom: 16px;
+	}
+
+	.section-head h2 {
+		font-size: 14px;
+		line-height: 1.3;
+		font-weight: 750;
+		color: rgba(255, 255, 255, 0.9);
+	}
+
+	.section-head p {
+		margin-top: 3px;
+		font-size: 10px;
+		line-height: 1.5;
+		color: rgba(255, 255, 255, 0.27);
+	}
+
+	.section-icon {
+		display: flex;
+		width: 32px;
+		height: 32px;
+		flex: 0 0 auto;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid rgba(141, 199, 255, 0.1);
+		border-radius: 9px;
+		background: rgba(141, 199, 255, 0.055);
+		color: rgba(159, 208, 255, 0.8);
+	}
+
+	.field {
+		display: block;
+		min-width: 0;
+	}
+
+	.field-label {
+		display: block;
+		margin-bottom: 7px;
+		font-size: 11px;
+		font-weight: 650;
+		color: rgba(255, 255, 255, 0.52);
+	}
+
+	.field-hint {
+		display: block;
+		margin-top: 6px;
+		font-size: 9px;
+		line-height: 1.5;
+		color: rgba(255, 255, 255, 0.2);
+	}
+
+	.input-shell {
+		position: relative;
+		display: grid;
+		grid-template-columns: 44px minmax(0, 1fr);
+		min-height: 46px;
+		align-items: stretch;
+		overflow: hidden;
+		border: 1px solid rgba(255, 255, 255, 0.075);
+		border-radius: 12px;
+		background: rgba(0, 0, 0, 0.2);
+		transition:
+			border-color 160ms ease,
+			background 160ms ease,
+			box-shadow 160ms ease;
+	}
+
+	.input-shell:focus-within {
+		border-color: rgba(141, 199, 255, 0.24);
+		background: rgba(141, 199, 255, 0.025);
+		box-shadow: 0 0 0 3px rgba(141, 199, 255, 0.035);
+	}
+
+	.input-icon-wrap {
+		display: flex;
+		width: 44px;
+		height: 100%;
+		min-height: 44px;
+		align-items: center;
+		justify-content: center;
+		color: rgba(255, 255, 255, 0.34);
+		transition:
+			color 160ms ease,
+			background 160ms ease;
+	}
+
+	.input-shell:focus-within .input-icon-wrap {
+		color: rgba(159, 208, 255, 0.9);
+		background: rgba(141, 199, 255, 0.025);
+	}
+
+	.input-shell input,
+	.input-shell select {
+		width: 100%;
+		height: 100%;
+		min-height: 44px;
+		min-width: 0;
+		border: 0;
+		outline: 0;
+		background: transparent;
+		padding: 0 14px 0 10px;
+		font-size: 12px;
+		font-weight: 500;
+		color: rgba(255, 255, 255, 0.84);
+	}
+
+	.input-shell input::placeholder {
+		color: rgba(255, 255, 255, 0.18);
+	}
+
+	.input-shell select {
+		cursor: pointer;
+		appearance: none;
+		padding-right: 42px;
+	}
+
+	.input-shell select option {
+		background: #111419;
+		color: white;
+	}
+
+	.select-arrow-wrap {
+		position: absolute;
+		top: 0;
+		right: 0;
+		display: flex;
+		width: 40px;
+		height: 100%;
+		align-items: center;
+		justify-content: center;
+		color: rgba(255, 255, 255, 0.25);
+		pointer-events: none;
+	}
+
+	.textarea-field {
+		width: 100%;
+		min-height: 140px;
+		resize: vertical;
+		border: 1px solid rgba(255, 255, 255, 0.075);
+		border-radius: 12px;
+		outline: none;
+		background: rgba(0, 0, 0, 0.2);
+		padding: 13px 14px;
+		font-size: 12px;
+		line-height: 1.7;
+		font-weight: 500;
+		color: rgba(255, 255, 255, 0.82);
+		transition:
+			border-color 160ms ease,
+			background 160ms ease,
+			box-shadow 160ms ease;
+	}
+
+	.textarea-field::placeholder {
+		color: rgba(255, 255, 255, 0.18);
+	}
+
+	.textarea-field:focus {
+		border-color: rgba(141, 199, 255, 0.24);
+		background: rgba(141, 199, 255, 0.025);
+		box-shadow: 0 0 0 3px rgba(141, 199, 255, 0.035);
+	}
+
+	@media (max-width: 640px) {
+		.admin-card {
+			padding: 16px;
+			border-radius: 14px;
+		}
+	}
+</style>

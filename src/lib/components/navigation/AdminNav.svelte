@@ -1,29 +1,80 @@
 <script lang="ts">
-	const navItems = [{ label: 'Deals', href: '/dashboard/deals' }];
+	import { page } from '$app/state';
+	import { LayoutDashboard, LogOut, Settings2 } from 'lucide-svelte';
+
+	const navItems = [
+		{
+			label: 'Deals',
+			href: '/dashboard/deals',
+			icon: LayoutDashboard
+		}
+	];
+
+	function isActive(href: string) {
+		return page.url.pathname === href || page.url.pathname.startsWith(`${href}/`);
+	}
 </script>
 
-<div class="border-b border-white/10 bg-black/60 py-4 backdrop-blur">
-	<div class="mx-auto flex max-w-7xl items-center justify-between px-4">
-		<ul class="flex items-center gap-3">
-			{#each navItems as item (item.label)}
-				<li>
-					<a
-						href={item.href}
-						class="cursor-pointer rounded-xl border border-white/10 bg-white/4 px-4 py-2 text-sm font-bold text-white transition hover:border-white/20 hover:bg-white/8"
-					>
-						{item.label}
-					</a>
-				</li>
-			{/each}
-		</ul>
+<div
+	class="sticky top-0 z-50 border-b border-white/[0.07] bg-[#0b0d11]/90 shadow-[0_10px_35px_rgba(0,0,0,0.24)] backdrop-blur-2xl"
+>
+	<div
+		class="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-[#9fd0ff]/20 to-transparent"
+	></div>
 
-		<form method="POST" action="/logout">
-			<button
-				type="submit"
-				class="cursor-pointer rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-200 transition hover:border-red-400/40 hover:bg-red-500/20"
+	<div class="mx-auto flex min-h-[68px] max-w-7xl items-center justify-between px-4 sm:px-6">
+		<div class="flex min-w-0 items-center gap-4">
+			<!-- Admin badge -->
+			<div
+				class="hidden items-center gap-2 rounded-lg border border-[#8dc7ff]/[0.10] bg-[#8dc7ff]/[0.045] px-3 py-2 sm:flex"
 			>
-				Logout
-			</button>
-		</form>
+				<img src="/logo.png" alt="bzetbonus" class="w-36" />
+			</div>
+
+			<!-- Navigation -->
+			<nav>
+				<ul class="flex items-center gap-1.5">
+					{#each navItems as item (item.label)}
+						{@const active = isActive(item.href)}
+
+						<li>
+							<a
+								href={item.href}
+								aria-current={active ? 'page' : undefined}
+								class={[
+									'group flex h-10 items-center gap-2 rounded-lg border px-3 text-[13px] font-semibold transition-all duration-200',
+									active
+										? 'border-[#8dc7ff]/[0.13] bg-[#8dc7ff]/[0.08] text-white shadow-[inset_0_0_0_1px_rgba(141,199,255,0.025)]'
+										: 'border-transparent text-white/42 hover:border-white/[0.06] hover:bg-white/[0.035] hover:text-white/80'
+								]}
+							>
+								<item.icon
+									size={16}
+									strokeWidth={active ? 2.1 : 1.9}
+									class={active ? 'text-[#9fd0ff]' : 'text-white/30'}
+								/>
+
+								<span>{item.label}</span>
+							</a>
+						</li>
+					{/each}
+				</ul>
+			</nav>
+		</div>
+
+		<!-- Logout -->
+		<button
+			type="button"
+			onclick={() => (window.location.href = '/')}
+			class="group flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-white/[0.07] bg-white/[0.025] px-3.5 text-[12px] font-semibold text-white/45 transition-all duration-200 hover:border-red-400/15 hover:bg-red-500/[0.06] hover:text-red-300"
+		>
+			<LogOut
+				size={15}
+				strokeWidth={1.9}
+				class="text-white/30 transition group-hover:text-red-300"
+			/>
+
+			<span class="hidden sm:inline">Zur Seite</span>
+		</button>
 	</div>
 </div>

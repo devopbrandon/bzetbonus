@@ -37,21 +37,24 @@ function parseStringArray(formData: FormData, key: string) {
 	return values;
 }
 
-export const load: PageServerLoad = async ({ locals }) => {
-	const { session, user } = await locals.safeGetSession();
+async function requireAdmin(locals: App.Locals) {
+	const { data: claimsData, error: claimsError } = await locals.supabase.auth.getClaims();
 
-	if (!session || !user) {
+	const userId = claimsData?.claims?.sub;
+
+	if (claimsError || !userId) {
 		throw redirect(303, '/');
 	}
 
-	const { data: profile, error } = await locals.supabase
+	const { data: profile, error: profileError } = await locals.supabase
 		.from('profiles')
 		.select('id, role')
-		.eq('id', user.id)
+		.eq('id', userId)
 		.maybeSingle();
 
-	if (error) {
-		console.error('Add deal profile check error:', error);
+	if (profileError) {
+		console.error('Deal admin check error:', profileError);
+
 		throw redirect(303, '/');
 	}
 
@@ -59,96 +62,141 @@ export const load: PageServerLoad = async ({ locals }) => {
 		throw redirect(303, '/');
 	}
 
+	return {
+		userId,
+		profile
+	};
+}
+
+export const load: PageServerLoad = async ({ locals }) => {
+	await requireAdmin(locals);
+
 	return {};
 };
 
 export const actions: Actions = {
 	default: async ({ request, locals }) => {
-		const { session, user } = await locals.safeGetSession();
-
-		if (!session || !user) {
-			throw redirect(303, '/');
-		}
-
-		const { data: profile, error: profileError } = await locals.supabase
-			.from('profiles')
-			.select('id, role')
-			.eq('id', user.id)
-			.maybeSingle();
-
-		if (profileError) {
-			console.error('Add deal profile error:', profileError);
-
-			return fail(500, {
-				error: 'Fehler beim Prüfen deiner Berechtigung.'
-			});
-		}
-
-		if (!profile || profile.role !== 'admin') {
-			throw redirect(303, '/');
-		}
+		await requireAdmin(locals);
 
 		const formData = await request.formData();
 
 		const str = (key: string) => {
 			const value = formData.get(key);
+
 			return typeof value === 'string' ? value.trim() : '';
 		};
 
+		/*
+		 * Casino
+		 */
 		const brand = str('brand');
+		const tagline = str('tagline');
+		const licence = str('licence');
+
+		/*
+		 * Bonus
+		 */
 		const bonus = str('bonus');
 		const bonustype = str('bonustype');
+
 		const maxbet = str('maxbet');
 		const maxbonus = str('maxbonus');
+
 		const freespins = str('freespins');
-		const logourl = str('logourl');
-		const reflink = str('reflink');
+		const freespinsCode = str('freespins_code');
+
+		/*
+		 * Wager
+		 */
 		const wager = str('wager');
 		const wagertype = str('wagertype');
+
+		/*
+		 * Promo / Tracking
+		 */
 		const promocode = str('promocode');
+		const reflink = str('reflink');
+
+		/*
+		 * Media
+		 */
+		const logourl = str('logourl');
+
+		/*
+		 * Information
+		 */
 		const information = str('information');
 
+		/*
+		 * Arrays
+		 */
 		const features = parseStringArray(formData, 'features');
 		const payments = parseStringArray(formData, 'payments');
 
 		const values = {
 			brand,
+			tagline,
+			licence,
+
 			bonus,
 			bonustype,
+
 			maxbet,
 			maxbonus,
+
 			freespins,
-			logourl,
-			reflink,
+			freespins_code: freespinsCode,
+
 			wager,
 			wagertype,
+
+			promocode,
+			reflink,
+
+			logourl,
+
 			features,
 			payments,
-			promocode,
+
 			information
 		};
 
+		/*
+		 * Required fields
+		 */
 		if (!brand || !bonus) {
 			return fail(400, {
-				error: 'Bitte Brand und Bonus ausfüllen.',
+				error: 'Bitte Casino und Bonus ausfüllen.',
 				values
 			});
 		}
 
 		const insertData = {
 			brand,
+
+			tagline: tagline || null,
+			licence: licence || null,
+
 			bonus,
 			bonustype: bonustype || null,
+
 			maxbet: maxbet || null,
 			maxbonus: maxbonus || null,
+
 			freespins: freespins || null,
-			logourl: logourl || null,
-			reflink: reflink || null,
+			freespins_code: freespinsCode || null,
+
 			wager: wager || null,
 			wagertype: wagertype || null,
+
+			promocode: promocode || null,
+			reflink: reflink || null,
+
+			logourl: logourl || null,
+
 			features,
 			payments,
-			promocode: promocode || null,
+
 			information: information || null
 		};
 
@@ -162,7 +210,7 @@ export const actions: Actions = {
 			console.error('Supabase insert deal error:', error);
 
 			return fail(500, {
-				error: error.message || 'Fehler beim Speichern in der Datenbank.',
+				error: error.message || 'Fehler beim Speichern des Deals.',
 				values
 			});
 		}

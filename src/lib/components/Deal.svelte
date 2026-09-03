@@ -2,79 +2,205 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { tick } from 'svelte';
+
 	import {
+		ArrowLeft,
 		ArrowRight,
 		Check,
-		ChevronDown,
 		Copy,
-		CreditCard,
-		Flag,
+		Gift,
 		Info,
+		Landmark,
 		Pencil,
 		ShieldCheck,
 		Sparkles,
-		TicketPercent,
 		Wallet,
-		Zap
+		X
 	} from 'lucide-svelte';
+
 	import ConfirmDelete from './ConfirmDelete.svelte';
-	import { slide } from 'svelte/transition';
 
 	export interface Deal {
 		id: number;
+		created_at: string | null;
+
 		brand: string | null;
+		tagline: string | null;
+		licence: string | null;
+
 		bonus: string | null;
 		bonustype: string | null;
+
 		maxbet: string | null;
 		maxbonus: string | null;
+
 		freespins: string | null;
+		freespins_code: string | null;
+
+		deposit_amount?: string | null;
+		play_amount?: string | null;
+
 		features: string[] | null;
+		payments: string[] | null;
+
 		logourl: string | null;
 		reflink: string | null;
+
 		wager: string | null;
 		wagertype: string | null;
+
 		promocode: string | null;
 		information: string | null;
-		payments: string[] | null;
+
+		position?: number | null;
+		is_visible?: boolean | null;
 	}
 
 	const defaultDeal: Deal = {
 		id: 0,
-		brand: 'Example Casino',
+		created_at: null,
+
+		brand: 'Casino',
+		tagline: '',
+		licence: '',
+
 		bonus: '—',
-		bonustype: 'Bonus',
+		bonustype: '',
+
 		maxbet: '—',
 		maxbonus: '—',
-		freespins: '—',
+
+		freespins: '',
+		freespins_code: '',
+
+		deposit_amount: '50€',
+		play_amount: '',
+
 		features: [],
+		payments: [],
+
 		logourl: '',
 		reflink: '#',
+
 		wager: '—',
 		wagertype: '',
+
 		promocode: '',
-		information: '',
-		payments: []
+		information: ''
 	};
 
-	let { deal = defaultDeal, position }: { deal?: Deal; position?: number } = $props();
+	let {
+		deal = defaultDeal
+	}: {
+		deal?: Deal;
+		position?: number;
+	} = $props();
 
-	const isTop = $derived(position === 1);
+	let detailsOpen = $state(false);
 
-	let copied = $state(false);
-	let copying = $state(false);
-	let expanded = $state(false);
-	let detailsEl = $state<HTMLDivElement | null>(null);
+	let copiedPromo = $state(false);
+	let copiedFs = $state(false);
 
-	const fmt = (value: string | null | undefined) => {
-		if (!value || value.trim() === '' || value === '_') return '—';
+	let cardEl = $state<HTMLElement | null>(null);
+
+	let glowActive = $state(false);
+	let mouseX = $state(50);
+	let mouseY = $state(50);
+
+	const features = $derived(deal.features?.filter((item) => item?.trim()) ?? []);
+
+	const payments = $derived(deal.payments?.filter((item) => item?.trim()) ?? []);
+
+	const hasPromo = $derived(Boolean(deal.promocode?.trim()));
+	const hasFreeSpins = $derived(Boolean(deal.freespins?.trim()));
+	const hasFsCode = $derived(Boolean(deal.freespins_code?.trim()));
+	const hasLicence = $derived(Boolean(deal.licence?.trim()));
+	const hasTagline = $derived(Boolean(deal.tagline?.trim()));
+	const hasInformation = $derived(Boolean(deal.information?.trim()));
+
+	const hasDetails = $derived(hasInformation || payments.length > 0);
+
+	const isNew = $derived.by(() => {
+		if (!deal.created_at) return false;
+
+		const created = new Date(deal.created_at).getTime();
+
+		if (Number.isNaN(created)) return false;
+
+		const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+
+		const age = Date.now() - created;
+
+		return age >= 0 && age <= thirtyDays;
+	});
+
+	function fmt(value: string | null | undefined) {
+		if (!value || !value.trim() || value.trim() === '_') {
+			return '—';
+		}
+
 		return value.trim();
-	};
+	}
 
-	const features = $derived(deal.features?.filter((item) => item && item.trim().length) ?? []);
-	const payments = $derived(deal.payments?.filter((item) => item && item.trim().length) ?? []);
-	const hasPromo = $derived(Boolean(deal.promocode && deal.promocode.trim().length));
-	const hasDetails = $derived(Boolean(deal.information?.trim()) || payments.length > 0);
+	function numericValue(value: string | null | undefined) {
+		if (!value) return null;
+
+		let cleaned = value.replace(/\s/g, '').replace(/€/g, '').replace(/\$/g, '').replace(/%/g, '');
+
+		/*
+		 * 10.000 -> 10000
+		 * 1.000,50 -> 1000.50
+		 */
+		if (cleaned.includes('.') && cleaned.includes(',')) {
+			cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+		} else if (/^\d{1,3}(\.\d{3})+$/.test(cleaned)) {
+			cleaned = cleaned.replace(/\./g, '');
+		} else {
+			cleaned = cleaned.replace(',', '.');
+		}
+
+		const parsed = Number.parseFloat(cleaned);
+
+		return Number.isFinite(parsed) ? parsed : null;
+	}
+
+	function euro(value: number) {
+		return `${new Intl.NumberFormat('de-DE', {
+			maximumFractionDigits: Number.isInteger(value) ? 0 : 2
+		}).format(value)}€`;
+	}
+
+	const depositAmount = $derived.by(() => {
+		return numericValue(deal.deposit_amount) ?? 50;
+	});
+
+	const calculatedPlayAmount = $derived.by(() => {
+		/*
+		 * Manuell gesetzter play_amount-Wert hat Vorrang.
+		 * Falls leer, berechnen wir ihn aus Deposit + Bonus.
+		 */
+		const manualPlay = numericValue(deal.play_amount);
+
+		if (manualPlay !== null) {
+			return manualPlay;
+		}
+
+		const bonusPercent = numericValue(deal.bonus);
+
+		if (bonusPercent === null) {
+			return depositAmount;
+		}
+
+		let bonusMoney = depositAmount * (bonusPercent / 100);
+
+		const maxBonus = numericValue(deal.maxbonus);
+
+		if (maxBonus !== null) {
+			bonusMoney = Math.min(bonusMoney, maxBonus);
+		}
+
+		return depositAmount + bonusMoney;
+	});
 
 	function paymentImage(payment: string) {
 		return `/images/payments/${payment.trim()}.webp`;
@@ -84,1397 +210,580 @@
 		return payment.trim().replace(/[-_]/g, ' ');
 	}
 
-	$effect(() => {
-		if (!browser || !payments.length) return;
+	function handlePointerMove(event: PointerEvent) {
+		if (!cardEl) return;
 
-		for (const payment of payments) {
-			const img = new Image();
-			img.src = paymentImage(payment);
-		}
-	});
+		const rect = cardEl.getBoundingClientRect();
 
-	async function copyCode() {
-		if (!deal.promocode) return;
+		mouseX = ((event.clientX - rect.left) / rect.width) * 100;
 
-		copying = true;
-
-		try {
-			if (navigator?.clipboard?.writeText) {
-				await navigator.clipboard.writeText(deal.promocode);
-			} else {
-				const ta = document.createElement('textarea');
-				ta.value = deal.promocode;
-				ta.style.position = 'fixed';
-				ta.style.opacity = '0';
-				document.body.appendChild(ta);
-				ta.select();
-				document.execCommand('copy');
-				document.body.removeChild(ta);
-			}
-
-			copied = true;
-
-			setTimeout(() => {
-				copied = false;
-			}, 1400);
-		} finally {
-			copying = false;
-		}
+		mouseY = ((event.clientY - rect.top) / rect.height) * 100;
 	}
 
-	async function toggleDetails() {
-		expanded = !expanded;
+	async function copyValue(value: string | null, type: 'promo' | 'fs') {
+		if (!browser || !value) return;
 
-		if (!expanded || !browser) return;
+		try {
+			await navigator.clipboard.writeText(value);
 
-		await tick();
+			if (type === 'promo') {
+				copiedPromo = true;
 
-		requestAnimationFrame(() => {
-			if (!detailsEl) return;
+				window.setTimeout(() => {
+					copiedPromo = false;
+				}, 1300);
+			} else {
+				copiedFs = true;
 
-			const rect = detailsEl.getBoundingClientRect();
-
-			const panelTop = window.scrollY + rect.top;
-			const panelBottom = window.scrollY + rect.bottom;
-
-			const topTarget = panelTop - 120;
-			const bottomTarget = panelBottom - window.innerHeight + 120;
-
-			window.scrollTo({
-				top: Math.max(topTarget, bottomTarget),
-				behavior: 'smooth'
-			});
-		});
+				window.setTimeout(() => {
+					copiedFs = false;
+				}, 1300);
+			}
+		} catch (error) {
+			console.error('COPY ERROR:', error);
+		}
 	}
 </script>
 
-<article class="deal-card group" class:gold={isTop}>
-	<div class="deal-visual-clip" aria-hidden="true">
-		<div class="deal-top-line"></div>
-		<div class="deal-shine"></div>
-		<div class="deal-orb deal-orb-left"></div>
-		<div class="deal-orb deal-orb-right"></div>
-		<div class="deal-sweep"></div>
-	</div>
+<article
+	bind:this={cardEl}
+	class="relative isolate w-full overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#111219] text-[#f5f7fb] shadow-[0_20px_46px_rgba(0,0,0,0.38)]"
+	onpointermove={handlePointerMove}
+	onpointerenter={() => (glowActive = true)}
+	onpointerleave={() => (glowActive = false)}
+>
+	<div
+		class="deal-glow pointer-events-none absolute inset-0 z-[1] opacity-0 transition-opacity duration-200 motion-reduce:hidden"
+		class:active={glowActive}
+		style={`--mx:${mouseX}%; --my:${mouseY}%;`}
+	></div>
 
-	<div class="relative z-10">
-		<div class="deal-layout">
-			<div class="brand-panel">
-				<div class="brand-glow"></div>
+	<div
+		class="pointer-events-none absolute -left-[5%] -top-[30%] z-0 h-[260px] w-[650px] rounded-full bg-[#5cc8ff]/[0.05] blur-[100px]"
+	></div>
 
-				<div class="logo-frame">
-					{#if deal.logourl}
-						<img
-							src={deal.logourl}
-							alt={`${fmt(deal.brand)} logo`}
-							class="brand-logo"
-							loading="lazy"
-						/>
-					{:else}
-						<span class="text-[10px] font-black tracking-[0.22em] text-white/35 uppercase">
-							Logo
-						</span>
+	{#if isNew}
+		<div
+			class="absolute left-0 top-0 z-20 flex h-[30px] items-center gap-1.5
+			border-b border-r border-[#5cc8ff]/20
+			bg-[#5cc8ff]/10 px-3
+			text-[#9fdcff]"
+		>
+			<span class="text-[15px] font-bold uppercase tracking-[0.08em]"> Brandneu </span>
+		</div>
+	{/if}
+
+	<div
+		class="relative z-[2] grid min-h-[222px] grid-cols-[196px_minmax(560px,1.6fr)_minmax(265px,0.72fr)_185px]
+			max-[1250px]:grid-cols-[180px_minmax(500px,1fr)_245px_170px]
+			max-[1000px]:grid-cols-[170px_minmax(0,1fr)]
+			max-[640px]:block"
+	>
+		<!-- BRAND -->
+		<section
+			class="flex flex-col justify-center gap-[13px] border-r border-white/[0.08] px-6 pb-[22px] pt-[27px]
+				max-[640px]:flex-row max-[640px]:flex-wrap max-[640px]:items-center max-[640px]:gap-x-[18px] max-[640px]:gap-y-[10px]
+				max-[640px]:border-b max-[640px]:border-r-0 max-[640px]:px-[18px] max-[640px]:pb-4 max-[640px]:pt-[42px]"
+		>
+			<div class="flex h-14 items-center justify-start max-[640px]:h-12 max-[640px]:w-full">
+				{#if deal.logourl}
+					<img
+						src={deal.logourl}
+						alt={`${fmt(deal.brand)} Logo`}
+						class="max-h-[52px] max-w-[150px] object-contain max-[640px]:max-h-11 max-[640px]:max-w-[130px]"
+						loading="lazy"
+					/>
+				{:else}
+					<div
+						class="flex h-[52px] w-[52px] items-center justify-center rounded-[10px] bg-white/[0.05] text-[17px] font-extrabold text-white/55"
+					>
+						{fmt(deal.brand).slice(0, 2)}
+					</div>
+				{/if}
+			</div>
+
+			<div
+				class="flex items-center gap-2 text-[12px] font-semibold text-white/[0.62] max-[640px]:text-[11px]"
+			>
+				<ShieldCheck size={15} strokeWidth={2} class="shrink-0 text-[#5cc8ff]" />
+
+				<span> Von Bzet ausgewählt </span>
+			</div>
+		</section>
+
+		<!-- BONUS + FREE SPINS -->
+		<section
+			class="flex flex-col justify-center border-r border-white/[0.08] px-7 pb-[17px] pt-[26px]
+				max-[1250px]:px-6
+				max-[1000px]:border-r-0
+				max-[640px]:border-b max-[640px]:px-[18px] max-[640px]:pb-[15px] max-[640px]:pt-[19px]"
+		>
+			<div
+				class="grid grid-cols-[minmax(220px,0.78fr)_minmax(270px,1fr)] items-center gap-[30px]
+					max-[1250px]:grid-cols-[minmax(200px,0.75fr)_minmax(235px,0.9fr)] max-[1250px]:gap-6
+					max-[640px]:grid-cols-[minmax(0,0.85fr)_minmax(155px,1fr)] max-[640px]:gap-[15px]
+					max-[430px]:grid-cols-[minmax(0,0.75fr)_145px] max-[430px]:gap-[11px]"
+			>
+				<div class="min-w-0">
+					<p class="text-[12px] font-semibold uppercase tracking-[0.02em] text-[#5cc8ff]">
+						{fmt(deal.bonustype)}
+					</p>
+
+					<p
+						class="mt-[5px] bg-linear-to-r from-[#eaf6ff] from-35% to-[#5cc8ff] bg-clip-text text-[52px] font-black leading-[0.88] tracking-[-0.01em] text-transparent
+							max-[640px]:text-[41px]
+							max-[430px]:text-[37px]"
+					>
+						{fmt(deal.bonus)}
+					</p>
+
+					{#if fmt(deal.maxbonus) !== '—'}
+						<p class="mt-2 text-[14px] font-medium text-white/[0.58]">
+							bis zu {fmt(deal.maxbonus)}
+						</p>
 					{/if}
 				</div>
 
-				<div class="brand-content min-w-0 text-center xl:text-left">
-					<div class="brand-badges">
-						<span class="mini-badge">
-							<Sparkles class="h-3 w-3" />
-							Exklusiv
-						</span>
+				{#if hasFreeSpins}
+					<div
+						class="min-w-0 border-l border-white/[0.08] pl-[30px]
+							max-[1250px]:pl-6
+							max-[640px]:pl-[15px]
+							max-[430px]:pl-[11px]"
+					>
+						<div class="flex items-center gap-[14px] max-[640px]:gap-[9px]">
+							<div
+								class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#5cc8ff]/[0.09] text-[#5cc8ff]
+									max-[640px]:h-[35px] max-[640px]:w-[35px]
+									max-[430px]:hidden"
+							>
+								<Gift size={20} strokeWidth={1.8} />
+							</div>
 
-						{#if fmt(deal.freespins) !== '—'}
-							<span class="mini-badge mini-badge-accent">
-								{fmt(deal.freespins)} Kostenlose FS
-							</span>
+							<div class="min-w-0">
+								<strong
+									class="block text-[34px] font-extrabold leading-[0.9] text-[#f5f7fb]
+										max-[1250px]:text-[31px]
+										max-[640px]:text-[27px]
+										max-[430px]:text-[25px]"
+								>
+									{fmt(deal.freespins)}
+								</strong>
+
+								<span
+									class="mt-[5px] block text-[11px] font-semibold leading-[1.25] text-white/[0.58] max-[640px]:text-[9px]"
+								>
+									Kostenlose Freispiele
+								</span>
+							</div>
+						</div>
+
+						{#if hasFsCode}
+							<div
+								class="mt-[17px] flex items-center justify-between gap-[14px] border-t border-white/[0.08] pt-3
+									max-[640px]:mt-[11px] max-[640px]:pt-[9px]"
+							>
+								<div class="min-w-0">
+									<span
+										class="block text-[13px] font-semibold text-white/[0.31] max-[640px]:text-[8px]"
+									>
+										Code für Freispiele
+									</span>
+
+									<strong
+										class="mt-[3px] block truncate text-[18px] font-bold text-[#f5f7fb] max-[640px]:text-[14px]"
+									>
+										{deal.freespins_code}
+									</strong>
+								</div>
+
+								<button
+									type="button"
+									onclick={() => copyValue(deal.freespins_code, 'fs')}
+									aria-label="Free Spins Code kopieren"
+									class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.03] text-white/[0.58] transition
+										hover:border-[#5cc8ff]/35 hover:bg-[#5cc8ff]/[0.08] hover:text-[#5cc8ff]
+										max-[430px]:h-[31px] max-[430px]:w-[31px]"
+								>
+									{#if copiedFs}
+										<Check size={16} strokeWidth={2.3} />
+									{:else}
+										<Copy size={16} strokeWidth={1.8} />
+									{/if}
+								</button>
+							</div>
 						{/if}
 					</div>
+				{/if}
+			</div>
+
+			<div
+				class="mt-[17px] grid grid-cols-2 border-t border-white/[0.08] pt-3 max-[640px]:mt-[14px]"
+			>
+				<div>
+					<span class="block text-[10px] font-semibold text-white/[0.31]"> Wager </span>
+
+					<strong class="mt-1 block text-[17px] font-bold text-[#f5f7fb] max-[640px]:text-[15px]">
+						{fmt(deal.wager)}
+
+						{#if fmt(deal.wagertype) !== '—'}
+							<small class="text-[11px] font-medium text-white/[0.58]">
+								({fmt(deal.wagertype)})
+							</small>
+						{/if}
+					</strong>
+				</div>
+
+				<div class="border-l border-white/[0.08] pl-4">
+					<span class="block text-[10px] font-semibold text-white/[0.31]"> Max Bet </span>
+
+					<strong class="mt-1 block text-[17px] font-bold text-[#f5f7fb] max-[640px]:text-[15px]">
+						{fmt(deal.maxbet)}
+					</strong>
 				</div>
 			</div>
 
-			<div class="deal-content">
-				<div class="stats-grid">
-					<div class="stat-card stat-main">
-						<div class="stat-head">
-							<p class="stat-label">{fmt(deal.bonustype)}</p>
-							<TicketPercent class="stat-icon text-white/70" />
-						</div>
+			<div
+				class="mt-[13px] flex items-center justify-between gap-3 border-t border-white/[0.08] pt-[10px]"
+			>
+				<div class="min-w-0">
+					<span class="block text-[12px] font-semibold uppercase text-white/[0.31]">
+						Promocode
+					</span>
 
-						<p class="stat-value">{fmt(deal.bonus)}</p>
-					</div>
-
-					<div class="stat-card">
-						<div class="stat-head">
-							<p class="stat-label">Max Bonus</p>
-							<Sparkles class="stat-icon text-white/45" />
-						</div>
-
-						<p class="stat-value">{fmt(deal.maxbonus)}</p>
-					</div>
-
-					<div class="stat-card">
-						<div class="stat-head">
-							<p class="stat-label">Max Bet</p>
-							<ShieldCheck class="stat-icon text-white/45" />
-						</div>
-
-						<p class="stat-value">{fmt(deal.maxbet)}</p>
-					</div>
-
-					<div class="stat-card">
-						<div class="stat-head">
-							<p class="stat-label">Wager</p>
-							<Zap class="stat-icon text-white/45" />
-						</div>
-
-						<p class="stat-value">
-							{fmt(deal.wager)}
-							{#if fmt(deal.wagertype) !== '—'}
-								<span class="stat-type">({fmt(deal.wagertype)})</span>
-							{/if}
-						</p>
-					</div>
+					<strong class="mt-[3px] block truncate text-[17px] font-bold text-[#f5f7fb]">
+						{hasPromo ? deal.promocode : 'Kein Code benötigt'}
+					</strong>
 				</div>
 
-				<div class="bottom-layout">
-					<div class="min-w-0 flex-1 space-y-3">
-						{#if features.length}
-							<ul class="features-list">
-								{#each features as feature}
-									<li class="feature-pill">
-										{feature}
-									</li>
-								{/each}
-							</ul>
+				{#if hasPromo}
+					<button
+						type="button"
+						onclick={() => copyValue(deal.promocode, 'promo')}
+						aria-label="Promocode kopieren"
+						class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.03] text-white/[0.58] transition
+							hover:border-[#5cc8ff]/35 hover:bg-[#5cc8ff]/[0.08] hover:text-[#5cc8ff]"
+					>
+						{#if copiedPromo}
+							<Check size={16} strokeWidth={2.3} />
+						{:else}
+							<Copy size={16} strokeWidth={1.8} />
 						{/if}
+					</button>
+				{/if}
+			</div>
+		</section>
 
-						<div class="promo-box">
-							<div class="promo-content">
-								<p class="promo-label">Promo Code</p>
+		<!-- DEPOSIT / VALUE -->
+		<section
+			class="flex flex-col justify-center border-r border-white/[0.08] px-[20px] py-[18px]
+				max-[1000px]:col-span-full max-[1000px]:grid max-[1000px]:grid-cols-[250px_minmax(0,1fr)] max-[1000px]:items-center max-[1000px]:gap-8
+				max-[1000px]:border-r-0 max-[1000px]:border-t
+				max-[640px]:block max-[640px]:border-b max-[640px]:px-[18px] max-[640px]:py-[18px]"
+		>
+			<div class="mb-[17px] max-[1000px]:mb-0 max-[640px]:mb-4">
+				<p
+					class="text-[15px] font-semibold leading-none text-white/[0.5]
+			max-[640px]:text-[14px]"
+				>
+					Bei
+					<strong class="font-extrabold text-white/[0.92]">
+						{euro(depositAmount)}
+					</strong>
+					Einzahlung
+				</p>
 
-								{#if hasPromo}
-									<p class="promo-code">
-										{deal.promocode}
-									</p>
-								{:else}
-									<p class="promo-empty">Kein Code benötigt</p>
-								{/if}
-							</div>
+				<p
+					class="mt-[8px] bg-linear-to-r from-[#7cc8ff] via-[#b9e2ff] to-[#eaf6ff] bg-clip-text
+		text-[48px] font-black leading-[0.82] tracking-[-0.04em] text-transparent
+		drop-shadow-[0_0_14px_rgba(124,200,255,0.14)]
+		max-[1250px]:text-[44px]
+		max-[640px]:text-[40px]"
+				>
+					{euro(calculatedPlayAmount)}
+				</p>
 
-							{#if hasPromo}
-								<button
-									type="button"
-									onclick={copyCode}
-									class="copy-button"
-									aria-live="polite"
-									aria-label={copied ? 'Promo code copied' : 'Copy promo code'}
-									disabled={copying}
-								>
-									{#if copied}
-										<Check class="h-4 w-4" />
-										Copied
-									{:else}
-										<Copy class="h-4 w-4" />
-										Copy
-									{/if}
-								</button>
-							{/if}
+				<p
+					class="mt-[8px] text-[14px] font-semibold leading-[1.2] text-white/[0.55]
+			max-[640px]:text-[13px]"
+				>
+					Für die erste Einzahlung
+				</p>
+			</div>
+
+			{#if features.length}
+				<div class="flex flex-col gap-2">
+					{#each features.slice(0, 4) as feature}
+						<div
+							class="flex items-center gap-[9px] text-[14px] font-medium leading-[1.25] text-white/[0.61] max-[640px]:text-[11px]"
+						>
+							<span
+								class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#5cc8ff] shadow-[0_0_8px_rgba(92,200,255,0.22)]"
+							></span>
+
+							<span>
+								{feature}
+							</span>
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</section>
+
+		<!-- ACTIONS -->
+		<section
+			class="flex flex-col
+		max-[1000px]:col-span-full max-[1000px]:grid max-[1000px]:grid-cols-[220px_minmax(0,1fr)] max-[1000px]:border-t max-[1000px]:border-white/[0.08]
+		max-[640px]:block"
+		>
+			{#if hasTagline}
+				<div
+					class="relative flex min-h-[46px] items-center justify-center overflow-hidden border-b border-white/[0.08]
+			bg-linear-to-r from-[#5cc8ff]/[0.12] to-[#5cc8ff]/[0.035]
+			py-2 pl-[17px] pr-[13px]
+			max-[1000px]:h-full max-[1000px]:border-b-0 max-[1000px]:border-r
+
+			max-[640px]:absolute
+			max-[640px]:right-0
+			max-[640px]:top-0
+			max-[640px]:z-30
+			max-[640px]:h-[30px]
+			max-[640px]:min-h-0
+			max-[640px]:w-auto
+			max-[640px]:max-w-[calc(100%-86px)]
+			max-[640px]:border-b
+			max-[640px]:border-l
+			max-[640px]:border-r-0
+			max-[640px]:border-white/[0.08]
+			max-[640px]:bg-[#5cc8ff]/[0.09]
+			max-[640px]:px-4
+			max-[640px]:py-0"
+				>
+					<span
+						class="line-clamp-2 text-[13px] font-bold leading-[1.3] text-[#c8eaff]
+				max-[640px]:line-clamp-1
+				max-[640px]:whitespace-nowrap
+				max-[640px]:text-[11px]
+				max-[640px]:leading-none"
+					>
+						{deal.tagline}
+					</span>
+				</div>
+			{/if}
+
+			<div
+				class="flex flex-1 flex-col justify-end gap-2 px-3 pb-[14px] pt-[11px]
+					max-[1000px]:grid max-[1000px]:grid-cols-[minmax(200px,0.65fr)_minmax(0,1fr)] max-[1000px]:items-center max-[1000px]:p-[9px]
+					max-[640px]:grid-cols-2 max-[640px]:gap-[7px]"
+			>
+				{#if hasLicence}
+					<div
+						class="flex items-center gap-[10px] rounded-[10px] bg-[#5cc8ff]/[0.035] px-[10px] py-[9px]
+							max-[1000px]:col-start-1 max-[1000px]:row-span-2
+							max-[640px]:col-span-full max-[640px]:row-auto"
+					>
+						<div
+							class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#5cc8ff]/[0.08] text-[#5cc8ff]"
+						>
+							<Landmark size={17} strokeWidth={1.8} />
+						</div>
+
+						<div class="min-w-0">
+							<span class="block text-[10px] font-semibold leading-none text-white/[0.36]">
+								Lizenz
+							</span>
+
+							<strong class="mt-[5px] block text-[11px] font-bold leading-[1.3] text-white/[0.72]">
+								{deal.licence}
+							</strong>
 						</div>
 					</div>
+				{/if}
 
-					<div class="actions-row">
-						{#if page.url.pathname === '/dashboard/deals'}
-							<button
-								type="button"
-								onclick={() => goto(`/dashboard/deals/edit/${deal.id}`)}
-								class="icon-action"
-								aria-label="Edit deal"
-							>
-								<Pencil class="h-4 w-4" />
-							</button>
-
-							<div class="delete-action">
-								<ConfirmDelete dealId={deal.id} />
-							</div>
-						{/if}
-
-						{#if hasDetails}
-							<button
-								type="button"
-								onclick={toggleDetails}
-								class="details-button"
-								aria-expanded={expanded}
-							>
-								<span>{expanded ? 'Close' : 'Details'}</span>
-								<ChevronDown
-									class={`h-4 w-4 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
-								/>
-							</button>
-						{/if}
-
-						<a
-							href={deal.reflink || '#'}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="play-button"
-							aria-label={`Open ${fmt(deal.brand)} deal`}
+				{#if page.url.pathname === '/dashboard/deals'}
+					<div class="grid grid-cols-2 gap-1.5 max-[640px]:col-span-full">
+						<button
+							type="button"
+							onclick={() => goto(`/dashboard/deals/edit/${deal.id}`)}
+							aria-label="Deal bearbeiten"
+							class="flex h-[34px] cursor-pointer items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.02] text-white/[0.58] transition hover:bg-white/[0.05] hover:text-white"
 						>
-							<span class="relative z-10 flex items-center gap-2">
-								Jetzt Spielen
-								<ArrowRight
-									class="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
-								/>
-							</span>
-						</a>
+							<Pencil size={16} strokeWidth={1.8} />
+						</button>
+
+						<div
+							class="relative z-50 flex h-[34px] items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.02]"
+						>
+							<ConfirmDelete dealId={deal.id} />
+						</div>
 					</div>
+				{/if}
+
+				{#if hasDetails}
+					<button
+						type="button"
+						onclick={() => (detailsOpen = true)}
+						class="flex h-10 cursor-pointer items-center justify-between rounded-full border border-white/[0.08] bg-transparent px-[15px] text-[11px] font-semibold text-white/[0.58] transition
+							hover:border-white/20 hover:bg-white/[0.025] hover:text-white
+							max-[1000px]:col-start-2
+							max-[640px]:col-start-1 max-[640px]:h-[42px]"
+					>
+						<span> Mehr erfahren </span>
+
+						<ArrowRight size={15} strokeWidth={1.8} />
+					</button>
+				{/if}
+
+				<a
+					href={deal.reflink || '#'}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="flex h-[47px] items-center justify-between rounded-full bg-white px-[14px] pl-[17px] text-[12px] font-extrabold text-[#0b0c11] transition
+						hover:-translate-y-px hover:bg-[#eaf6ff]
+						max-[1000px]:col-start-2
+						max-[640px]:col-start-2 max-[640px]:h-[42px]"
+				>
+					<span> Bonus sichern </span>
+
+					<ArrowRight size={18} strokeWidth={2.2} />
+				</a>
+			</div>
+		</section>
+	</div>
+
+	<!-- FULL WIDTH DRAWER -->
+	<div
+		class={[
+			'absolute inset-0 z-[100] bg-linear-to-br from-[#111219] to-[#0d0f15] transition-transform duration-300 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none',
+			detailsOpen ? 'translate-x-0' : 'translate-x-[101%]'
+		]}
+	>
+		<div class="flex h-full w-full flex-col">
+			<div
+				class="grid h-[52px] shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-white/[0.08] px-[18px]
+					max-[640px]:h-12 max-[640px]:grid-cols-[1fr_auto] max-[640px]:px-[14px]"
+			>
+				<button
+					type="button"
+					onclick={() => (detailsOpen = false)}
+					class="inline-flex w-fit cursor-pointer items-center gap-2 bg-transparent text-[11px] font-semibold text-white/[0.58] transition hover:text-white"
+				>
+					<ArrowLeft size={17} strokeWidth={1.9} />
+
+					<span> Zurück zum Deal </span>
+				</button>
+
+				<div class="flex items-center justify-center max-[640px]:hidden">
+					{#if deal.logourl}
+						<img src={deal.logourl} alt="" class="max-h-[26px] max-w-[90px] object-contain" />
+					{/if}
+				</div>
+
+				<button
+					type="button"
+					onclick={() => (detailsOpen = false)}
+					aria-label="Details schließen"
+					class="flex h-8 w-8 cursor-pointer items-center justify-center justify-self-end rounded-full bg-white/[0.03] text-white/[0.58] transition hover:bg-white/[0.07] hover:text-white"
+				>
+					<X size={19} strokeWidth={1.9} />
+				</button>
+			</div>
+
+			<div
+				class="grid h-[calc(100%-52px)] grid-cols-[minmax(0,1.25fr)_minmax(240px,0.75fr)_200px] items-center gap-9 px-[30px] py-[22px]
+					max-[1000px]:grid-cols-2 max-[1000px]:gap-[26px]
+					max-[640px]:flex max-[640px]:h-[calc(100%-48px)] max-[640px]:flex-col max-[640px]:items-stretch max-[640px]:gap-[26px] max-[640px]:overflow-y-auto max-[640px]:px-[18px] max-[640px]:py-[22px]"
+			>
+				{#if hasInformation}
+					<section>
+						<h4
+							class="flex items-center gap-[9px] text-[19px] font-bold text-[#f5f7fb] max-[640px]:text-[17px]"
+						>
+							<Info size={16} strokeWidth={1.9} class="text-[#5cc8ff]" />
+
+							Wichtige Informationen
+						</h4>
+
+						<p
+							class="mt-3 max-w-[700px] whitespace-pre-line text-[13px] leading-[1.65] text-white/[0.58] max-[640px]:text-[12px]"
+						>
+							{deal.information}
+						</p>
+					</section>
+				{/if}
+
+				{#if payments.length}
+					<section>
+						<h4
+							class="flex items-center gap-[9px] text-[19px] font-bold text-[#f5f7fb] max-[640px]:text-[17px]"
+						>
+							<Wallet size={16} strokeWidth={1.9} class="text-[#5cc8ff]" />
+
+							Zahlungsmethoden
+						</h4>
+
+						<p class="mt-1.5 text-[12px] text-white/[0.31]">
+							Verfügbare Ein- und Auszahlungsmethoden
+						</p>
+
+						<div class="mt-4 flex flex-wrap items-center gap-[13px] max-[640px]:gap-[11px]">
+							{#each payments as payment}
+								<img
+									src={paymentImage(payment)}
+									alt={paymentLabel(payment)}
+									title={paymentLabel(payment)}
+									class="block h-7 w-auto max-w-[84px] rounded object-contain max-[640px]:h-[26px] max-[640px]:max-w-[78px]"
+									loading="lazy"
+								/>
+							{/each}
+						</div>
+					</section>
+				{/if}
+
+				<div
+					class="flex flex-col gap-[13px]
+						max-[1000px]:col-span-full max-[1000px]:flex-row max-[1000px]:items-center max-[1000px]:justify-between
+						max-[640px]:mt-auto"
+				>
+					<div>
+						<span class="block text-[29px] font-extrabold leading-none">
+							{fmt(deal.bonus)}
+						</span>
+
+						<small class="mt-[5px] block text-[11px] uppercase font-medium text-white/[0.31]">
+							{fmt(deal.bonustype)}
+						</small>
+					</div>
+
+					<a
+						href={deal.reflink || '#'}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="flex h-[50px] items-center justify-between rounded-full bg-white px-[15px] text-[12px] font-extrabold text-[#0b0c11]
+							max-[1000px]:w-[200px]
+							max-[640px]:w-auto max-[640px]:flex-1"
+					>
+						Bonus sichern
+
+						<ArrowRight size={18} strokeWidth={2.2} />
+					</a>
 				</div>
 			</div>
 		</div>
-
-		{#if expanded && hasDetails}
-			<div out:slide={{ duration: 200 }} class="details-panel" bind:this={detailsEl}>
-				<div class="details-grid">
-					{#if deal.information?.trim()}
-						<section class="details-section">
-							<div class="mb-3 flex items-center gap-2">
-								<span class="section-icon">
-									<Flag class="h-4 w-4" />
-								</span>
-
-								<h4 class="section-title">Features</h4>
-							</div>
-
-							<p class="details-text">
-								{deal.information}
-							</p>
-						</section>
-					{/if}
-
-					{#if payments.length}
-						<section class="details-section">
-							<div class="mb-4 flex items-center gap-2">
-								<span class="section-icon">
-									<Wallet class="h-4 w-4" />
-								</span>
-
-								<h4 class="section-title">Payments</h4>
-							</div>
-
-							<ul class="payment-list">
-								{#each payments as payment}
-									<li class="payment-chip">
-										<img
-											src={paymentImage(payment)}
-											alt={paymentLabel(payment)}
-											title={paymentLabel(payment)}
-											class="payment-image"
-											loading="eager"
-										/>
-									</li>
-								{/each}
-							</ul>
-						</section>
-					{/if}
-				</div>
-			</div>
-		{/if}
 	</div>
 </article>
 
 <style>
-	.deal-card {
-		position: relative;
-		overflow: visible;
-		isolation: isolate;
-		border-radius: 30px;
-		border: 1px solid rgba(255, 255, 255, 0.11);
-		background:
-			linear-gradient(180deg, rgba(36, 22, 70, 0.72), rgba(15, 11, 31, 0.9)),
-			linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015));
-		padding: 18px;
-		color: white;
-		box-shadow:
-			0 22px 80px -46px rgba(168, 85, 247, 0.45),
-			inset 0 1px 0 rgba(255, 255, 255, 0.12),
-			inset 0 -1px 0 rgba(0, 0, 0, 0.35);
-		transition:
-			transform 260ms ease,
-			border-color 260ms ease,
-			box-shadow 260ms ease;
-	}
-
-	.deal-card::before {
-		content: '';
-		position: absolute;
-		inset: 1px;
-		z-index: 0;
-		border-radius: 29px;
-		pointer-events: none;
-		background:
-			linear-gradient(
-				115deg,
-				rgba(255, 255, 255, 0.22),
-				transparent 18%,
-				transparent 74%,
-				rgba(255, 255, 255, 0.08)
-			),
-			radial-gradient(circle at 50% -10%, rgba(168, 85, 247, 0.18), transparent 32%);
-		opacity: 0.75;
-		mask:
-			linear-gradient(#000, #000) content-box,
-			linear-gradient(#000, #000);
-		-webkit-mask:
-			linear-gradient(#000, #000) content-box,
-			linear-gradient(#000, #000);
-		padding: 1px;
-		-webkit-mask-composite: xor;
-		mask-composite: exclude;
-	}
-
-	.deal-card.gold {
-		border-color: rgba(250, 204, 21, 0.45);
-		box-shadow:
-			0 22px 80px -46px rgba(250, 204, 21, 0.5),
-			0 0 34px -18px rgba(250, 204, 21, 0.55),
-			inset 0 1px 0 rgba(255, 255, 255, 0.14),
-			inset 0 -1px 0 rgba(0, 0, 0, 0.35);
-	}
-
-	.deal-card.gold:hover {
-		border-color: rgba(250, 204, 21, 0.65);
-		box-shadow:
-			0 30px 100px -48px rgba(250, 204, 21, 0.7),
-			0 0 46px -20px rgba(250, 204, 21, 0.95),
-			inset 0 1px 0 rgba(255, 255, 255, 0.18),
-			inset 0 -1px 0 rgba(0, 0, 0, 0.35);
-	}
-
-	.deal-card.gold .deal-orb-left,
-	.deal-card.gold .deal-orb-right {
-		background: rgba(250, 204, 21, 0.28);
-	}
-
-	.deal-card.gold .stat-main {
-		border-color: rgba(250, 204, 21, 0.35);
-		background:
-			linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(250, 204, 21, 0.14)),
-			rgba(0, 0, 0, 0.13);
-	}
-
-	.deal-card:hover {
-		transform: translateY(-4px);
-		border-color: rgba(168, 85, 247, 0.35);
-		box-shadow:
-			0 30px 100px -48px rgba(168, 85, 247, 0.62),
-			0 0 42px -28px rgba(168, 85, 247, 0.9),
-			inset 0 1px 0 rgba(255, 255, 255, 0.16),
-			inset 0 -1px 0 rgba(0, 0, 0, 0.35);
-	}
-
-	.deal-layout {
-		display: flex;
-		flex-direction: column;
-		gap: 20px;
-	}
-
-	.deal-content {
-		display: flex;
-		min-width: 0;
-		flex: 1;
-		flex-direction: column;
-		gap: 16px;
-	}
-
-	.deal-visual-clip {
-		position: absolute;
-		inset: 0;
-		z-index: 0;
-		overflow: hidden;
-		border-radius: inherit;
-		pointer-events: none;
-	}
-
-	.deal-sweep {
-		position: absolute;
-		top: -80%;
-		left: -35%;
-		width: 28%;
-		height: 260%;
-		background: linear-gradient(
-			90deg,
-			transparent,
-			rgba(255, 255, 255, 0.18),
-			rgba(255, 255, 255, 0.42),
-			rgba(255, 255, 255, 0.13),
-			transparent
+	.deal-glow {
+		background: radial-gradient(
+			320px circle at var(--mx) var(--my),
+			rgba(92, 200, 255, 0.06),
+			rgba(92, 200, 255, 0.015) 42%,
+			transparent 72%
 		);
-		transform: rotate(18deg);
-		opacity: 0;
-		transition:
-			left 850ms ease,
-			opacity 300ms ease;
 	}
 
-	.deal-card:hover .deal-sweep {
-		left: 125%;
+	.deal-glow.active {
 		opacity: 1;
-	}
-
-	.deal-top-line {
-		position: absolute;
-		top: 0;
-		left: 22px;
-		right: 22px;
-		height: 1px;
-		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
-		opacity: 0.5;
-	}
-
-	.deal-shine {
-		position: absolute;
-		inset: 0;
-		background-image:
-			radial-gradient(circle at 17% 22%, rgba(255, 255, 255, 0.14) 0 1px, transparent 2px),
-			radial-gradient(circle at 82% 12%, rgba(255, 255, 255, 0.12) 0 1px, transparent 2px),
-			radial-gradient(circle at 74% 74%, rgba(255, 255, 255, 0.08) 0 1px, transparent 2px);
-		opacity: 0.85;
-	}
-
-	.deal-orb {
-		position: absolute;
-		border-radius: 999px;
-		filter: blur(34px);
-		opacity: 0.55;
-		transition: opacity 260ms ease;
-	}
-
-	.deal-card:hover .deal-orb {
-		opacity: 0.82;
-	}
-
-	.deal-orb-left {
-		left: -90px;
-		top: 20px;
-		width: 180px;
-		height: 180px;
-		background: rgba(124, 58, 237, 0.32);
-	}
-
-	.deal-orb-right {
-		right: -120px;
-		bottom: -80px;
-		width: 230px;
-		height: 230px;
-		background: rgba(217, 70, 239, 0.16);
-	}
-
-	.brand-panel {
-		position: relative;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: 14px;
-		min-height: 210px;
-		border-radius: 24px;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		background:
-			linear-gradient(
-				155deg,
-				rgba(255, 255, 255, 0.09),
-				rgba(255, 255, 255, 0.025) 42%,
-				rgba(0, 0, 0, 0.16)
-			),
-			radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.16), transparent 48%);
-		padding: 20px;
-		overflow: hidden;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.11),
-			inset 0 -1px 0 rgba(0, 0, 0, 0.3);
-	}
-
-	.brand-panel::before {
-		content: '';
-		position: absolute;
-		left: -25%;
-		top: 18px;
-		width: 150%;
-		height: 1px;
-		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
-		transform: rotate(-8deg);
-	}
-
-	.brand-panel::after {
-		content: ' ';
-		position: absolute;
-		right: 18px;
-		bottom: 12px;
-		font-size: 54px;
-		line-height: 1;
-		font-weight: 1000;
-		letter-spacing: -0.08em;
-		color: rgba(255, 255, 255, 0.035);
-		-webkit-text-stroke: 1px rgba(255, 255, 255, 0.08);
-	}
-
-	.brand-glow {
-		position: absolute;
-		inset: auto auto -50px 50%;
-		width: 170px;
-		height: 90px;
-		border-radius: 999px;
-		background: rgba(168, 85, 247, 0.22);
-		filter: blur(28px);
-		transform: translateX(-50%);
-	}
-
-	.logo-frame {
-		position: relative;
-		display: grid;
-		width: 128px;
-		height: 92px;
-		place-items: center;
-		z-index: 1;
-	}
-
-	.logo-frame::after {
-		content: '';
-		position: absolute;
-		inset: 9px;
-		border-radius: 17px;
-		pointer-events: none;
-	}
-
-	.brand-logo {
-		max-height: 70px;
-		max-width: 140px;
-		object-fit: contain;
-		filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.65));
-	}
-
-	.brand-badges {
-		margin-bottom: 8px;
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-	}
-
-	.brand-title {
-		max-width: 250px;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		font-size: 30px;
-		line-height: 1;
-		font-weight: 1000;
-		letter-spacing: -0.05em;
-		color: #f8fafc;
-		text-shadow:
-			0 2px 0 rgba(0, 0, 0, 0.5),
-			0 0 18px rgba(255, 255, 255, 0.14);
-	}
-
-	.brand-subtitle {
-		margin-top: 4px;
-		font-size: 12px;
-		font-weight: 1000;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-		color: rgba(255, 255, 255, 0.4);
-	}
-
-	.mini-badge {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		border-radius: 999px;
-		border: 1px solid rgba(255, 255, 255, 0.12);
-		background: rgba(255, 255, 255, 0.055);
-		padding: 6px 9px;
-		font-size: 12px;
-		font-weight: 1000;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		color: rgba(255, 255, 255, 0.7);
-	}
-
-	.mini-badge-accent {
-		border-color: rgba(168, 85, 247, 0.3);
-		background: rgba(147, 51, 234, 0.4);
-		color: rgba(237, 233, 254, 0.92);
-	}
-
-	.stats-grid {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 10px;
-	}
-
-	.stat-card {
-		position: relative;
-		overflow: hidden;
-		min-height: 102px;
-		border-radius: 19px;
-		border: 1px solid rgba(255, 255, 255, 0.09);
-		background:
-			linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)),
-			rgba(0, 0, 0, 0.12);
-		padding: 14px;
-		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-		transition:
-			transform 220ms ease,
-			border-color 220ms ease,
-			background 220ms ease;
-	}
-
-	.stat-card::after {
-		content: '';
-		position: absolute;
-		right: -28px;
-		top: -42px;
-		width: 88px;
-		height: 88px;
-		border-radius: 999px;
-		background: rgba(255, 255, 255, 0.06);
-		filter: blur(2px);
-	}
-
-	.deal-card:hover .stat-card {
-		border-color: rgba(255, 255, 255, 0.14);
-	}
-
-	.stat-card:hover {
-		transform: translateY(-2px);
-		background:
-			linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035)),
-			rgba(0, 0, 0, 0.13);
-	}
-
-	.stat-main {
-		border-color: rgba(168, 85, 247, 0.24);
-		background:
-			linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(147, 51, 234, 0.1)),
-			rgba(0, 0, 0, 0.13);
-	}
-
-	.stat-head {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-	}
-
-	.stat-label {
-		font-family: 'Montserrat', sans-serif;
-		font-size: 10px;
-		font-weight: bolder;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-		color: rgba(255, 255, 255, 0.42);
-	}
-
-	.stat-value {
-		position: relative;
-		z-index: 1;
-		margin-top: 16px;
-		font-size: 21px;
-		line-height: 1;
-		font-weight: 1000;
-		letter-spacing: -0.04em;
-		color: white;
-		text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
-	}
-
-	.stat-type {
-		font-size: 12px;
-		color: rgba(255, 255, 255, 0.4);
-	}
-
-	.bottom-layout {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
-
-	.features-list {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-	}
-
-	.feature-pill {
-		border-radius: 13px;
-		border: 1px solid rgba(255, 255, 255, 0.09);
-		background: rgba(255, 255, 255, 0.045);
-		padding: 9px 11px;
-		font-size: 12px;
-		font-weight: 800;
-		color: rgba(255, 255, 255, 0.68);
-		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-		transition:
-			transform 200ms ease,
-			border-color 200ms ease,
-			background 200ms ease,
-			color 200ms ease;
-	}
-
-	.feature-pill:hover {
-		transform: translateY(-1px);
-		border-color: rgba(168, 85, 247, 0.32);
-		background: rgba(147, 51, 234, 0.14);
-		color: white;
-	}
-
-	.promo-box {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-		border-radius: 20px;
-		border: 1px solid rgba(255, 255, 255, 0.09);
-		background:
-			linear-gradient(90deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)),
-			rgba(0, 0, 0, 0.16);
-		padding: 13px;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.07),
-			0 14px 40px -34px rgba(0, 0, 0, 0.9);
-	}
-
-	.promo-content {
-		min-width: 0;
-	}
-
-	.promo-label {
-		font-size: 10px;
-		font-weight: 1000;
-		letter-spacing: 0.2em;
-		text-transform: uppercase;
-		color: rgba(255, 255, 255, 0.35);
-	}
-
-	.promo-code {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		font-size: 18px;
-		font-weight: 1000;
-		letter-spacing: 0.025em;
-		color: white;
-	}
-
-	.promo-empty {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		font-size: 14px;
-		font-weight: 700;
-		color: rgba(255, 255, 255, 0.45);
-	}
-
-	.actions-row {
-		position: relative;
-		z-index: 200;
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-
-	.copy-button,
-	.details-button,
-	.icon-action,
-	.delete-action {
-		display: inline-flex;
-		cursor: pointer;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		border-radius: 15px;
-		border: 1px solid rgba(255, 255, 255, 0.11);
-		background: rgba(255, 255, 255, 0.055);
-		padding: 11px 14px;
-		font-size: 13px;
-		font-weight: 1000;
-		color: rgba(255, 255, 255, 0.76);
-		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-		transition:
-			transform 200ms ease,
-			border-color 200ms ease,
-			background 200ms ease,
-			color 200ms ease;
-	}
-
-	.copy-button:hover,
-	.details-button:hover,
-	.icon-action:hover,
-	.delete-action:hover {
-		transform: translateY(-1px);
-		border-color: rgba(168, 85, 247, 0.32);
-		background: rgba(147, 51, 234, 0.14);
-		color: white;
-	}
-
-	.copy-button:disabled {
-		cursor: not-allowed;
-		opacity: 0.6;
-	}
-
-	.icon-action,
-	.delete-action {
-		position: relative;
-		min-height: 46px;
-		min-width: 46px;
-		padding: 0;
-		overflow: visible;
-	}
-
-	.delete-action {
-		z-index: 500;
-	}
-
-	.play-button {
-		position: relative;
-		display: inline-flex;
-		min-height: 63px;
-		cursor: pointer;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		overflow: hidden;
-		border-radius: 15px;
-		border: 1px solid rgba(255, 255, 255, 0.55);
-		background: linear-gradient(180deg, #ffffff 0%, #e2d9f5 44%, #9d7fce 100%);
-		padding: 12px 20px;
-		font-size: 13px;
-		font-weight: 1000;
-		letter-spacing: 0.02em;
-		color: #1b0f36;
-		box-shadow:
-			0 0 22px rgba(168, 85, 247, 0.28),
-			inset 0 1px 0 rgba(255, 255, 255, 0.95),
-			inset 0 -1px 0 rgba(0, 0, 0, 0.28);
-		transition:
-			transform 220ms ease,
-			box-shadow 220ms ease,
-			filter 220ms ease;
-	}
-
-	.play-button::before {
-		content: '';
-		position: absolute;
-		inset: 2px;
-		border-radius: 13px;
-		border-top: 1px solid rgba(255, 255, 255, 0.9);
-		background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), transparent 46%);
-		pointer-events: none;
-	}
-
-	.play-button::after {
-		content: '';
-		position: absolute;
-		top: -50%;
-		left: -80%;
-		width: 42%;
-		height: 200%;
-		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85), transparent);
-		transform: rotate(18deg);
-		transition: left 650ms ease;
-		pointer-events: none;
-	}
-
-	.play-button:hover {
-		transform: translateY(-2px);
-		filter: brightness(1.06);
-		box-shadow:
-			0 0 32px rgba(168, 85, 247, 0.42),
-			0 0 50px -28px rgba(217, 70, 239, 0.9),
-			inset 0 1px 0 rgba(255, 255, 255, 0.95),
-			inset 0 -1px 0 rgba(0, 0, 0, 0.3);
-	}
-
-	.play-button:hover::after {
-		left: 140%;
-	}
-
-	.details-panel {
-		position: relative;
-		margin-top: 16px;
-		overflow: hidden;
-		border-radius: 24px;
-		border: 1px solid rgba(255, 255, 255, 0.09);
-		background:
-			linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
-			rgba(0, 0, 0, 0.18);
-		padding: 14px;
-		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
-		animation: openDetails 240ms ease both;
-	}
-
-	.details-panel::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 18px;
-		right: 18px;
-		height: 1px;
-		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent);
-	}
-
-	.details-grid {
-		display: grid;
-		gap: 12px;
-	}
-
-	.details-section {
-		border-radius: 18px;
-		border: 1px solid rgba(255, 255, 255, 0.08);
-		background: rgba(255, 255, 255, 0.035);
-		padding: 15px;
-		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-	}
-
-	.details-text {
-		white-space: pre-line;
-		font-size: 14px;
-		line-height: 1.75;
-		color: rgba(255, 255, 255, 0.7);
-	}
-
-	.section-icon {
-		display: inline-grid;
-		width: 30px;
-		height: 30px;
-		place-items: center;
-		border-radius: 11px;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		background: rgba(255, 255, 255, 0.06);
-		color: rgba(255, 255, 255, 0.7);
-	}
-
-	.section-title {
-		font-size: 12px;
-		font-weight: 1000;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-		color: rgba(255, 255, 255, 0.62);
-	}
-
-	.payment-list {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 10px;
-	}
-
-	.payment-chip {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 3px;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		background:
-			linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03)),
-			rgba(0, 0, 0, 0.1);
-		padding: 4px;
-		opacity: 0.86;
-		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-		transition:
-			transform 190ms ease,
-			opacity 190ms ease,
-			border-color 190ms ease,
-			background 190ms ease;
-	}
-
-	.payment-chip:hover {
-		transform: translateY(-2px) scale(1.025);
-		opacity: 1;
-		border-color: rgba(168, 85, 247, 0.32);
-		background: rgba(147, 51, 234, 0.14);
-	}
-
-	.payment-image {
-		height: 28px;
-		width: auto;
-		max-width: 96px;
-		object-fit: contain;
-		border-radius: 2px;
-	}
-
-	@keyframes openDetails {
-		from {
-			opacity: 0;
-			transform: translateY(-6px);
-		}
-
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	@media (min-width: 640px) {
-		.promo-box {
-			flex-direction: row;
-			align-items: center;
-			justify-content: space-between;
-		}
-
-		.actions-row {
-			flex-direction: row;
-		}
-	}
-
-	@media (min-width: 1024px) {
-		.stats-grid {
-			grid-template-columns: repeat(4, minmax(0, 1fr));
-		}
-
-		.details-grid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-	}
-
-	@media (min-width: 1280px) {
-		.deal-layout {
-			flex-direction: row;
-			align-items: stretch;
-		}
-
-		.brand-panel {
-			width: 260px;
-			flex-shrink: 0;
-		}
-
-		.bottom-layout {
-			flex-direction: row;
-			align-items: flex-end;
-			justify-content: space-between;
-		}
-	}
-
-	@media (max-width: 640px) {
-		.deal-card {
-			border-radius: 18px;
-			padding: 9px;
-			box-shadow:
-				0 14px 46px -38px rgba(168, 85, 247, 0.45),
-				inset 0 1px 0 rgba(255, 255, 255, 0.1),
-				inset 0 -1px 0 rgba(0, 0, 0, 0.35);
-		}
-
-		.deal-card::before {
-			border-radius: 17px;
-			opacity: 0.55;
-		}
-
-		.deal-card:hover {
-			transform: none;
-		}
-
-		.deal-layout {
-			gap: 9px;
-		}
-
-		.deal-content {
-			gap: 9px;
-		}
-
-		.deal-top-line {
-			left: 14px;
-			right: 14px;
-		}
-
-		.deal-shine {
-			opacity: 0.55;
-		}
-
-		.deal-orb {
-			filter: blur(28px);
-			opacity: 0.4;
-		}
-
-		.deal-orb-left {
-			left: -105px;
-			top: -35px;
-			width: 145px;
-			height: 145px;
-		}
-
-		.deal-orb-right {
-			right: -125px;
-			bottom: -95px;
-			width: 175px;
-			height: 175px;
-		}
-
-		.brand-panel {
-			min-height: 92px;
-			gap: 7px;
-			border-radius: 15px;
-			padding: 9px;
-		}
-
-		.brand-panel::before {
-			top: 10px;
-			opacity: 0.65;
-		}
-
-		.brand-panel::after {
-			right: 10px;
-			bottom: 8px;
-			font-size: 34px;
-		}
-
-		.brand-glow {
-			bottom: -38px;
-			width: 110px;
-			height: 58px;
-			filter: blur(21px);
-		}
-
-		.logo-frame {
-			width: 78px;
-			height: 52px;
-			border-radius: 13px;
-		}
-
-		.logo-frame::after {
-			inset: 6px;
-			border-radius: 9px;
-		}
-
-		.brand-logo {
-			max-height: 34px;
-			max-width: 64px;
-			filter: drop-shadow(0 5px 12px rgba(0, 0, 0, 0.6));
-		}
-
-		.brand-content {
-			width: 100%;
-		}
-
-		.brand-badges {
-			margin-bottom: 0;
-			gap: 6px;
-		}
-
-		.brand-title,
-		.brand-subtitle {
-			display: none;
-		}
-
-		.mini-badge {
-			gap: 4px;
-			padding: 3px 6px;
-			font-size: 7px;
-			letter-spacing: 0.1em;
-		}
-
-		.mini-badge :global(svg) {
-			width: 9px;
-			height: 9px;
-		}
-
-		.stats-grid {
-			gap: 7px;
-		}
-
-		.stat-card {
-			min-height: 62px;
-			border-radius: 12px;
-			padding: 8px;
-		}
-
-		.stat-card::after {
-			right: -40px;
-			top: -48px;
-			width: 68px;
-			height: 68px;
-			opacity: 0.75;
-		}
-
-		.stat-card:hover {
-			transform: none;
-		}
-
-		.stat-head {
-			gap: 5px;
-		}
-
-		.stat-label {
-			font-size: 7px;
-			letter-spacing: 0.1em;
-		}
-
-		.stat-value {
-			margin-top: 9px;
-			font-size: 14px;
-			letter-spacing: -0.03em;
-		}
-
-		.stat-type {
-			display: block;
-			margin-top: 2px;
-			font-size: 8px;
-			line-height: 1;
-		}
-
-		.bottom-layout {
-			gap: 8px;
-		}
-
-		.features-list {
-			gap: 6px;
-		}
-
-		.feature-pill {
-			border-radius: 9px;
-			padding: 5px 7px;
-			font-size: 9px;
-			line-height: 1;
-		}
-
-		.feature-pill:hover {
-			transform: none;
-		}
-
-		.promo-box {
-			display: grid;
-			grid-template-columns: minmax(0, 1fr) auto;
-			align-items: center;
-			gap: 8px;
-			border-radius: 13px;
-			padding: 8px;
-		}
-
-		.promo-label {
-			font-size: 7px;
-			letter-spacing: 0.13em;
-		}
-
-		.promo-code {
-			margin-top: 1px;
-			font-size: 13px;
-			line-height: 1.05;
-		}
-
-		.promo-empty {
-			font-size: 11px;
-		}
-
-		.copy-button {
-			width: auto;
-			min-height: 32px;
-			border-radius: 10px;
-			padding: 7px 9px;
-			font-size: 10px;
-			gap: 5px;
-		}
-
-		.copy-button :global(svg) {
-			width: 12px;
-			height: 12px;
-		}
-
-		.actions-row {
-			display: grid;
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-			gap: 7px;
-		}
-
-		.details-button,
-		.icon-action,
-		.delete-action,
-		.play-button {
-			width: 100%;
-			min-height: 36px;
-			border-radius: 11px;
-			padding: 8px 10px;
-			font-size: 11px;
-		}
-
-		.details-button :global(svg),
-		.icon-action :global(svg),
-		.play-button :global(svg) {
-			width: 13px;
-			height: 13px;
-		}
-
-		.copy-button:hover,
-		.details-button:hover,
-		.icon-action:hover,
-		.delete-action:hover,
-		.play-button:hover {
-			transform: none;
-		}
-
-		.icon-action,
-		.delete-action {
-			min-width: 36px;
-			padding: 0;
-		}
-
-		.play-button {
-			grid-column: auto;
-		}
-
-		.play-button::before {
-			border-radius: 9px;
-		}
-
-		.details-panel {
-			margin-top: 9px;
-			border-radius: 15px;
-			padding: 9px;
-		}
-
-		.details-panel::before {
-			left: 12px;
-			right: 12px;
-		}
-
-		.details-grid {
-			gap: 8px;
-		}
-
-		.details-section {
-			border-radius: 12px;
-			padding: 10px;
-		}
-
-		.section-icon {
-			width: 24px;
-			height: 24px;
-			border-radius: 8px;
-		}
-
-		.section-icon :global(svg) {
-			width: 12px;
-			height: 12px;
-		}
-
-		.section-title {
-			font-size: 9px;
-			letter-spacing: 0.12em;
-		}
-
-		.details-text {
-			font-size: 11px;
-			line-height: 1.55;
-		}
-
-		.payment-list {
-			gap: 6px;
-		}
-
-		.payment-chip {
-			padding: 3px;
-		}
-
-		.payment-image {
-			height: 20px;
-			max-width: 68px;
-		}
 	}
 </style>

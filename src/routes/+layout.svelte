@@ -8,7 +8,9 @@
 
 	import { page } from '$app/state';
 
-	let { children } = $props();
+	let { children, data } = $props();
+
+	let sidebarCollapsed = $state(false);
 </script>
 
 <svelte:head>
@@ -16,7 +18,7 @@
 </svelte:head>
 
 {#if page.url.pathname.startsWith('/dashboard')}
-	<div class="min-h-screen bg-linear-to-b from-[#131F42] via-[#16244D] to-[#0D172E] font-[Inter]">
+	<div class="min-h-screen bg-[#090a0c] font-[Inter]">
 		<AdminNav />
 
 		<main class="min-w-0 flex-1">
@@ -24,18 +26,19 @@
 		</main>
 	</div>
 {:else}
-	<div
-		class="relative flex min-h-screen overflow-hidden bg-linear-to-b from-[#131F42] via-[#16244D] to-[#0D172E] font-[Inter]"
-	>
+	<div class="relative min-h-screen overflow-x-hidden bg-[#090a0c] font-[Inter]">
 		<Background />
 
-		<div class="relative z-10 flex min-h-screen w-full">
-			<Sidebar />
+		<Sidebar bind:collapsed={sidebarCollapsed} profile={data.profile} />
 
-			<main class="min-w-0 flex-1 sm:ml-72">
-				{@render children()}
-			</main>
-		</div>
+		<main
+			class={[
+				'relative z-10 min-h-screen min-w-0 transition-[margin] duration-300 ease-out',
+				sidebarCollapsed ? 'md:ml-[76px]' : 'md:ml-[240px]'
+			]}
+		>
+			{@render children()}
+		</main>
 	</div>
 {/if}
 
