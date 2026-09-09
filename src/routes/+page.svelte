@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-	<title>Bonis die du lieben wirst! - Money4Duo.com</title>
+	<title>Die besten Casino Boni für die Community - Bzetbonus.com</title>
 </svelte:head>
 
 <Hero />

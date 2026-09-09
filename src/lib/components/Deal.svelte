@@ -643,7 +643,7 @@
 						max-[1000px]:col-start-2
 						max-[640px]:col-start-2 max-[640px]:h-[42px]"
 				>
-					<span> Bonus sichern </span>
+					<span> Jetzt Spielen </span>
 
 					<ArrowRight size={18} strokeWidth={2.2} />
 				</a>
@@ -763,7 +763,7 @@
 							max-[1000px]:w-[200px]
 							max-[640px]:w-auto max-[640px]:flex-1"
 					>
-						Bonus sichern
+						Jetzt Spielen
 
 						<ArrowRight size={18} strokeWidth={2.2} />
 					</a>

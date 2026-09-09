@@ -24,7 +24,7 @@
 		/>
 
 		<!-- dark cinematic grading -->
-		<div class="absolute inset-0 bg-black/45"></div>
+		<div class="absolute inset-0 bg-black/5"></div>
 
 		<!-- center readability -->
 		<div
@@ -83,17 +83,17 @@
 
 		<!-- Headline -->
 		<h1
-			class="hero-enter hero-enter--headline mx-auto max-w-[900px] text-[34px] font-black leading-[0.98] tracking-[-0.045em] text-white sm:text-[48px] md:text-[64px] lg:text-[72px]"
+			class="hero-enter hero-enter--headline mx-auto max-w-[800px] text-[34px] font-black leading-[0.98] tracking-[-0.045em] text-white sm:text-[48px] md:text-[64px] lg:text-[72px]"
 		>
-			BZET SPIELT, DU
-			<span class="text-[#9fd0ff]"> PROFITIERST. </span>
+			Die besten Casino Boni für die
+			<span class="text-[#9fd0ff]"> Community. </span>
 		</h1>
 
 		<!-- Copy -->
 		<p
 			class="hero-enter hero-enter--copy mx-auto mt-6 max-w-[620px] text-[14px] font-medium leading-6 text-white/48 sm:text-[15px]"
 		>
-			Handverlesene Casino Deals, die Bzet selbst nutzt und denen er vertraut. Kein unnötiger Müll –
+			Verifizierte Casino Deals, die Bzet selbst nutzt und denen er vertraut. Kein unnötiger Müll –
 			nur Angebote, die wirklich interessant sind.
 		</p>
 

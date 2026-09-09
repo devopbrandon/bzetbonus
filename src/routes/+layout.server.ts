@@ -22,7 +22,9 @@ export const load: LayoutServerLoad = async ({ cookies, locals: { supabase } }) 
 			username,
 			email,
 			avatar_url,
-			role
+			role,
+			points,
+			balance
 		`
 		)
 		.eq('id', claims.sub)

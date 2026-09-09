@@ -4,13 +4,18 @@
 		ChevronDown,
 		ChevronLeft,
 		ChevronRight,
+		Image,
 		LayoutDashboard,
 		LogIn,
 		LogOut,
 		Menu,
+		PackageOpen,
+		ShipWheel,
 		Shuffle,
 		Star,
+		Trophy,
 		User,
+		UsersRound,
 		X
 	} from 'lucide-svelte';
 	import type { Component } from 'svelte';
@@ -35,6 +40,8 @@
 		email?: string | null;
 		avatar_url?: string | null;
 		role?: string | null;
+		balance?: number | null;
+		points?: number | null;
 	};
 
 	let {
@@ -48,6 +55,7 @@
 	let mobileOpen = $state(false);
 	let authOpen = $state(false);
 	let accountOpen = $state(false);
+	let communityOpen = $state(false);
 
 	const navItems: NavItem[] = [
 		{
@@ -56,9 +64,32 @@
 			icon: Star
 		},
 		{
+			label: 'Tägliches Rad',
+			href: '/daily',
+			icon: ShipWheel
+		}
+	];
+
+	const communityItems: NavItem[] = [
+		{
+			label: 'Gewinnbilder',
+			href: '/gewinnbilder',
+			icon: Image
+		},
+		{
+			label: 'Case Opening',
+			href: '/case-opening',
+			icon: PackageOpen
+		},
+		{
 			label: 'Verlosungen',
 			href: '/verlosungen',
 			icon: Shuffle
+		},
+		{
+			label: 'Milestones',
+			href: '/milestones',
+			icon: Trophy
 		}
 	];
 
@@ -70,17 +101,17 @@
 		},
 		{
 			label: 'Instagram',
-			href: 'https://instagram.com/bzetbros',
+			href: 'https://www.instagram.com/realbzet?igsi=eThpc3J6amZzeWlp',
 			icon: '/images/socials/instagram.svg'
 		},
 		{
 			label: 'YouTube',
-			href: 'https://youtube.com/@bzetbros',
+			href: 'https://youtube.com/@bzetgaming?si=BuKx5SN5T-oyGebj',
 			icon: '/images/socials/youtube.svg'
 		},
 		{
 			label: 'Discord',
-			href: 'https://discord.gg/bzetbros',
+			href: 'https://discord.gg/RkUaKZnYY',
 			icon: '/images/socials/discord.svg'
 		}
 	];
@@ -115,6 +146,10 @@
 		closeMobileSidebar();
 	}
 
+	function toggleCommunity() {
+		communityOpen = !communityOpen;
+	}
+
 	function toggleAccount() {
 		accountOpen = !accountOpen;
 	}
@@ -128,6 +163,8 @@
 
 		return value.charAt(0).toUpperCase();
 	}
+
+	let communityActive = $derived(communityItems.some((item) => isActive(item.href)));
 </script>
 
 <!-- Mobile Toggle -->
@@ -241,6 +278,135 @@
 					</a>
 				</li>
 			{/each}
+
+			<li class="relative pt-1">
+				<button
+					type="button"
+					onclick={toggleCommunity}
+					aria-expanded={communityOpen}
+					class={[
+						'group relative flex h-11 w-full cursor-pointer items-center overflow-visible rounded-lg text-sm font-semibold transition-all duration-200',
+						collapsed ? 'justify-center md:px-0' : 'gap-3 px-3',
+						communityActive || communityOpen
+							? 'bg-[#181d24] text-white shadow-[inset_0_0_0_1px_rgba(141,199,255,0.07)]'
+							: 'text-white/48 hover:bg-white/[0.045] hover:text-white'
+					]}
+				>
+					<div
+						class={[
+							'flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-all duration-200',
+							communityActive || communityOpen
+								? 'bg-[#8dc7ff]/[0.11] text-[#9fd0ff]'
+								: 'text-white/38 group-hover:text-white/80'
+						]}
+					>
+						<UsersRound size={18} strokeWidth={communityActive || communityOpen ? 2.15 : 1.9} />
+					</div>
+
+					{#if !collapsed}
+						<span class="min-w-0 flex-1 truncate text-left">Community</span>
+
+						<ChevronDown
+							size={15}
+							strokeWidth={1.9}
+							class={`shrink-0 text-white/28 transition-transform duration-300 ${
+								communityOpen ? 'rotate-180 text-[#9fd0ff]/70' : ''
+							}`}
+						/>
+					{/if}
+
+					{#if collapsed && !communityOpen}
+						<span
+							class="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-80 hidden -translate-y-1/2 translate-x-[-4px] whitespace-nowrap rounded-md border border-white/[0.09] bg-[#171a1f] px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-[0_10px_30px_rgba(0,0,0,0.45)] transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100 md:block"
+						>
+							Community
+						</span>
+					{/if}
+				</button>
+
+				{#if !collapsed}
+					<div
+						class={[
+							'grid transition-[grid-template-rows,opacity] duration-300 ease-out',
+							communityOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+						]}
+					>
+						<div class="overflow-hidden">
+							<div
+								class="relative ml-[22px] mt-1.5 space-y-1 border-l border-white/[0.07] pb-1 pl-[18px]"
+							>
+								{#each communityItems as item, index (item.label)}
+									{@const active = isActive(item.href)}
+
+									<a
+										href={item.href}
+										onclick={closeMobileSidebar}
+										aria-current={active ? 'page' : undefined}
+										class={[
+											'group/item relative flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[12px] font-semibold transition-all duration-200',
+											active
+												? 'bg-[#8dc7ff]/[0.08] text-[#b9ddff]'
+												: 'text-white/34 hover:translate-x-0.5 hover:bg-white/[0.035] hover:text-white/78'
+										]}
+										style={`transition-delay: ${communityOpen ? index * 28 : 0}ms`}
+									>
+										<span
+											class={[
+												'absolute -left-[19px] top-1/2 h-px w-[12px] -translate-y-1/2 transition duration-200',
+												active ? 'bg-[#8dc7ff]/45' : 'bg-white/[0.07] group-hover/item:bg-white/20'
+											]}
+										></span>
+
+										<item.icon
+											size={15}
+											strokeWidth={active ? 2.1 : 1.8}
+											class={active
+												? 'text-[#9fd0ff]'
+												: 'text-white/28 group-hover/item:text-white/60'}
+										/>
+
+										<span class="truncate">{item.label}</span>
+
+										{#if active}
+											<span
+												class="ml-auto h-1.5 w-1.5 rounded-full bg-[#8dc7ff] shadow-[0_0_10px_rgba(141,199,255,0.5)]"
+											></span>
+										{/if}
+									</a>
+								{/each}
+							</div>
+						</div>
+					</div>
+				{:else if communityOpen}
+					<div
+						class="absolute left-[calc(100%+12px)] top-0 z-90 hidden w-[210px] overflow-hidden rounded-xl border border-white/[0.09] bg-[#14171c]/98 p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl md:block"
+					>
+						<div class="mb-1 border-b border-white/[0.06] px-3 pb-2.5 pt-2">
+							<p class="text-[11px] font-bold tracking-[0.08em] text-white/75 uppercase">
+								Community
+							</p>
+						</div>
+
+						{#each communityItems as item (item.label)}
+							{@const active = isActive(item.href)}
+
+							<a
+								href={item.href}
+								aria-current={active ? 'page' : undefined}
+								class={[
+									'flex h-10 items-center gap-2.5 rounded-lg px-3 text-[12px] font-semibold transition duration-200',
+									active
+										? 'bg-[#8dc7ff]/[0.08] text-[#b9ddff]'
+										: 'text-white/48 hover:bg-white/[0.055] hover:text-white'
+								]}
+							>
+								<item.icon size={15} strokeWidth={active ? 2.1 : 1.8} />
+								{item.label}
+							</a>
+						{/each}
+					</div>
+				{/if}
+			</li>
 		</ul>
 	</nav>
 
@@ -396,9 +562,20 @@
 								{profile.username ?? 'BZET User'}
 							</p>
 
-							<p class="mt-0.5 truncate text-[10px] font-medium text-white/25">
-								{profile.role === 'admin' ? 'Administrator' : 'Account'}
-							</p>
+							<div class="mt-0.5 flex items-center gap-2 text-[10px] font-semibold">
+								<span class="text-[#9fd0ff]/75">
+									{Number(profile.balance ?? 0).toLocaleString('de-DE', {
+										minimumFractionDigits: 2,
+										maximumFractionDigits: 2
+									})} €
+								</span>
+
+								<span class="h-1 w-1 rounded-full bg-white/15"></span>
+
+								<span class="text-white/35">
+									{Number(profile.points ?? 0).toLocaleString('de-DE')} Points
+								</span>
+							</div>
 						</div>
 
 						<ChevronDown
