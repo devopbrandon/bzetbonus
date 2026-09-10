@@ -19,7 +19,7 @@
 
 {#if page.url.pathname.startsWith('/dashboard')}
 	<div class="min-h-screen bg-[#090a0c] font-[Inter]">
-		<AdminNav />
+		<AdminNav role={data.profile?.role} />
 
 		<main class="min-w-0 flex-1">
 			{@render children()}

@@ -1,14 +1,43 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { LayoutDashboard, LogOut, Settings2 } from 'lucide-svelte';
+	import { Box, LayoutDashboard, LogOut, Shuffle, Users, Watch } from 'lucide-svelte';
+
+	let { role = 'user' }: { role?: string } = $props();
 
 	const navItems = [
 		{
 			label: 'Deals',
 			href: '/dashboard/deals',
-			icon: LayoutDashboard
+			icon: LayoutDashboard,
+			roles: ['admin']
+		},
+		{
+			label: 'Verlosungen',
+			href: '/dashboard/verlosungen',
+			icon: Shuffle,
+			roles: ['admin', 'moderator']
+		},
+		{
+			label: 'User',
+			href: '/dashboard/user',
+			icon: Users,
+			roles: ['admin', 'moderator']
+		},
+		{
+			label: 'Cases',
+			href: '/dashboard/cases',
+			icon: Box,
+			roles: ['admin']
+		},
+		{
+			label: 'Openings',
+			href: '/dashboard/case-history',
+			icon: Watch,
+			roles: ['admin', 'moderator']
 		}
 	];
+
+	const visibleNavItems = $derived(navItems.filter((item) => item.roles.includes(role)));
 
 	function isActive(href: string) {
 		return page.url.pathname === href || page.url.pathname.startsWith(`${href}/`);
@@ -34,7 +63,7 @@
 			<!-- Navigation -->
 			<nav>
 				<ul class="flex items-center gap-1.5">
-					{#each navItems as item (item.label)}
+					{#each visibleNavItems as item (item.label)}
 						{@const active = isActive(item.href)}
 
 						<li>

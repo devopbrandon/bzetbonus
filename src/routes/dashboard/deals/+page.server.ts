@@ -1,7 +1,17 @@
 import { fail, redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, parent }) => {
+	const { profile } = await parent();
+
+	if (profile.role === 'moderator') {
+		throw redirect(303, '/dashboard/user');
+	}
+
+	if (profile.role !== 'admin') {
+		throw redirect(303, '/');
+	}
+
 	const { data, error } = await locals.supabase
 		.from('deals')
 		.select('*')

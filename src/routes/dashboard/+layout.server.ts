@@ -19,7 +19,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		throw redirect(303, '/');
 	}
 
-	if (!profile || profile.role !== 'admin') {
+	if (!profile || !['admin', 'moderator'].includes(profile.role)) {
 		throw redirect(303, '/');
 	}
 
