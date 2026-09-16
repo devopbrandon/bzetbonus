@@ -169,8 +169,8 @@
 		===================================================== -->
 		<div in:fly={{ y: 20, duration: 150 }} class="calculator-enter mb-5 sm:mb-6">
 			<div
-				class="overflow-hidden rounded-[16px] border border-white/[0.08]
-					bg-[#101117] shadow-[0_18px_45px_rgba(0,0,0,0.22)]"
+				class="overflow-hidden rounded-[16px] border-2 border-white/15 hover:border-white/30
+					bg-[#101117] shadow-[0_18px_45px_rgba(0,0,0,0.22)] duration-150"
 			>
 				<div
 					class="flex flex-col gap-5 px-5 py-5

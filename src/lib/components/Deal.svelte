@@ -247,7 +247,7 @@
 
 <article
 	bind:this={cardEl}
-	class="relative isolate w-full overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#111219] text-[#f5f7fb] shadow-[0_20px_46px_rgba(0,0,0,0.38)]"
+	class="relative isolate w-full overflow-hidden rounded-[18px] border-2 border-white/15 hover:border-white/30 duration-150 bg-[#111219] text-[#f5f7fb] shadow-[0_20px_46px_rgba(0,0,0,0.38)] hover:shadow-white/15"
 	onpointermove={handlePointerMove}
 	onpointerenter={() => (glowActive = true)}
 	onpointerleave={() => (glowActive = false)}

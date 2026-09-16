@@ -93,8 +93,8 @@
 		<p
 			class="hero-enter hero-enter--copy mx-auto mt-6 max-w-[620px] text-[14px] font-medium leading-6 text-white/48 sm:text-[15px]"
 		>
-			Verifizierte Casino Deals, die Bzet selbst nutzt und denen er vertraut. Kein unnötiger Müll –
-			nur Angebote, die wirklich interessant sind.
+			Verifizierte Casino Deals, die Bzet selbst nutzt und denen er vertraut. Schnelle Ein- und
+			Auszahlungen sowie Freispiele ohne Einzahlung
 		</p>
 
 		<!-- Actions -->

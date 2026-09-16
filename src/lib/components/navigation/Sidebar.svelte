@@ -5,6 +5,7 @@
 		ChevronDown,
 		ChevronLeft,
 		ChevronRight,
+		Clapperboard,
 		Image,
 		LayoutDashboard,
 		LockKeyhole,
@@ -72,6 +73,11 @@
 			label: 'Tägliches Rad',
 			href: '/daily',
 			icon: ShipWheel
+		},
+		{
+			label: 'Stream',
+			href: '/stream',
+			icon: Clapperboard
 		}
 	];
 
@@ -134,7 +140,7 @@
 		},
 		{
 			label: 'YouTube',
-			href: 'https://youtube.com/@bzetgaming?si=BuKx5SN5T-oyGebj',
+			href: 'https://youtube.com/@realbzet?si=d2JgJw1OHcyUk81t',
 			icon: '/images/socials/youtube.svg'
 		},
 		{
