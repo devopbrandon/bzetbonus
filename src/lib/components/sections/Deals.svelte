@@ -5,7 +5,7 @@
 	import { fade, fly } from 'svelte/transition';
 
 	type DealRow = {
-		id: number;
+		id: string;
 		created_at?: string | null;
 
 		brand?: string | null;

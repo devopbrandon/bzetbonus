@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import {
+		Bitcoin,
 		BookOpen,
 		ChevronDown,
 		ChevronLeft,
@@ -96,11 +97,6 @@
 			label: 'Verlosungen',
 			href: '/verlosungen',
 			icon: Shuffle
-		},
-		{
-			label: 'Milestones',
-			href: '/milestones',
-			icon: Trophy
 		}
 	];
 
@@ -672,6 +668,18 @@
 						>
 							<User size={16} strokeWidth={1.9} />
 							Profil
+						</a>
+
+						<a
+							href="/auszahlen"
+							onclick={() => {
+								closeAccount();
+								closeMobileSidebar();
+							}}
+							class="flex h-10 items-center gap-2.5 rounded-lg px-3 text-[12px] font-semibold text-white/55 transition hover:bg-white/[0.055] hover:text-white"
+						>
+							<Bitcoin size={16} strokeWidth={1.9} />
+							Auszahlen
 						</a>
 
 						{#if profile.role === 'admin' || profile.role === 'moderator'}

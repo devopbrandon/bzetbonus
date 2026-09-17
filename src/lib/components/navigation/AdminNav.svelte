@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { Box, LayoutDashboard, LogOut, Shuffle, Users, Watch } from 'lucide-svelte';
+	import { Bitcoin, Box, LayoutDashboard, LogOut, Shuffle, Users, Watch } from 'lucide-svelte';
 
 	let { role = 'user' }: { role?: string } = $props();
 
@@ -33,6 +33,12 @@
 			label: 'Openings',
 			href: '/dashboard/case-history',
 			icon: Watch,
+			roles: ['admin', 'moderator']
+		},
+		{
+			label: 'Auszahlungen',
+			href: '/dashboard/auszahlung',
+			icon: Bitcoin,
 			roles: ['admin', 'moderator']
 		}
 	];
