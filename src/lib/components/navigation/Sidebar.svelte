@@ -148,6 +148,12 @@
 			href: 'https://discord.gg/RkUaKZnYY',
 			icon: '/images/socials/discord.svg',
 			color: '#5865F2'
+		},
+		{
+			label: 'TikTok',
+			href: 'https://www.tiktok.com/@bzetreal?_r=1&_t=ZG-99qRMGOBMVV',
+			icon: '/images/socials/tiktok.svg',
+			color: '#000000'
 		}
 	];
 

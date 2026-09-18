@@ -42,6 +42,14 @@
 			action: 'Beitreten',
 			subtitle: 'Direkt in die BZET Community',
 			color: '#5865F2'
+		},
+		{
+			label: 'TikTok',
+			href: 'https://www.tiktok.com/@bzetreal?_r=1&_t=ZG-99qRMGOBMVV',
+			icon: '/images/socials/tiktok.svg',
+			action: 'Folgen',
+			subtitle: 'Storys, Updates & Highlights',
+			color: '#000000'
 		}
 	];
 </script>
@@ -70,7 +78,7 @@
 		</div>
 
 		<!-- Social Grid -->
-		<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+		<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
 			{#each socialItems as social (social.label)}
 				<a
 					href={social.href}
