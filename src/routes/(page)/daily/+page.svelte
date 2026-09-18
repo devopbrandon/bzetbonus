@@ -44,6 +44,8 @@
 
 	const SPIN_DURATION = 5600;
 
+	const isLoggedIn = $derived(data.isLoggedIn === true);
+
 	let spinning = $state(false);
 	let canSpin = $state(data.canSpin);
 
@@ -74,6 +76,10 @@
 
 	const segments = $derived.by(() => {
 		let currentWeight = 0;
+
+		if (!rewards.length || totalWeight <= 0) {
+			return [];
+		}
 
 		return rewards.map((reward, index) => {
 			const start = (currentWeight / totalWeight) * 360;
@@ -266,6 +272,10 @@
 	}
 
 	async function spinWheel() {
+		if (!isLoggedIn) {
+			return;
+		}
+
 		if (spinning || !canSpin || !rewards.length) {
 			return;
 		}
@@ -396,7 +406,11 @@
 					<div class="stat-label">Streak</div>
 
 					<div class="stat-value">
-						{streakDay}/7
+						{#if isLoggedIn}
+							{streakDay}/7
+						{:else}
+							—
+						{/if}
 					</div>
 				</div>
 			</div>
@@ -410,7 +424,11 @@
 					<div class="stat-label">Points</div>
 
 					<div class="stat-value">
-						{points.toLocaleString('de-DE')}
+						{#if isLoggedIn}
+							{points.toLocaleString('de-DE')}
+						{:else}
+							—
+						{/if}
 					</div>
 				</div>
 			</div>
@@ -424,7 +442,11 @@
 					<div class="stat-label">Balance</div>
 
 					<div class="stat-value">
-						{formatBalance(balance)}€
+						{#if isLoggedIn}
+							{formatBalance(balance)}€
+						{:else}
+							—
+						{/if}
 					</div>
 				</div>
 			</div>
@@ -435,7 +457,9 @@
 				</div>
 
 				<div>
-					<div class="stat-label">Heute</div>
+					<div class="stat-label">
+						{isLoggedIn ? 'Heute' : 'Vorschau'}
+					</div>
 
 					<div class="stat-value">
 						Tag {wheelDay}
@@ -449,9 +473,9 @@
 			{#each Array(7) as _, index}
 				{@const day = index + 1}
 
-				{@const completed = day <= streakDay}
+				{@const completed = isLoggedIn && day <= streakDay}
 
-				{@const active = canSpin && day === wheelDay}
+				{@const active = isLoggedIn && canSpin && day === wheelDay}
 
 				{@const jackpot = day === 7}
 
@@ -499,7 +523,7 @@
 				<div class="mb-5 flex items-center justify-between border-b border-white/[0.05] pb-4">
 					<div>
 						<div class="text-[9px] font-bold uppercase tracking-[0.13em] text-white/25">
-							Dein heutiger Spin
+							{isLoggedIn ? 'Dein heutiger Spin' : 'Wheel Vorschau'}
 						</div>
 
 						<div class="mt-1 text-lg font-bold tracking-[-0.025em] text-white">
@@ -511,17 +535,25 @@
 					<div
 						class={[
 							'rounded-md border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.08em]',
-							canSpin
-								? 'border-[#8dc7ff]/15 bg-[#8dc7ff]/[0.055] text-[#8dc7ff]'
-								: 'border-white/[0.06] bg-white/[0.025] text-white/25'
+							!isLoggedIn
+								? 'border-white/[0.06] bg-white/[0.025] text-white/30'
+								: canSpin
+									? 'border-[#8dc7ff]/15 bg-[#8dc7ff]/[0.055] text-[#8dc7ff]'
+									: 'border-white/[0.06] bg-white/[0.025] text-white/25'
 						]}
 					>
-						{canSpin ? 'Bereit' : 'Erledigt'}
+						{#if !isLoggedIn}
+							Vorschau
+						{:else if canSpin}
+							Bereit
+						{:else}
+							Erledigt
+						{/if}
 					</div>
 				</div>
 
 				<div class="relative mx-auto aspect-square w-full max-w-[500px]">
-					<!-- POINTER WRAPPER: POSITION BLEIBT IMMER FIX -->
+					<!-- POINTER WRAPPER -->
 					<div class="absolute left-1/2 top-[-6px] z-40 -translate-x-1/2">
 						<div class={`pointer-tip ${spinning ? 'pointer-tip-spinning' : ''}`}>
 							<div
@@ -586,43 +618,62 @@
 					<div class={`wheel-center ${spinning ? 'wheel-center-spinning' : ''}`}>
 						<div class="absolute inset-[6px] rounded-full border border-white/[0.04]"></div>
 
-						<Gift size={27} strokeWidth={1.7} class="relative text-white/60" />
+						{#if isLoggedIn}
+							<Gift size={27} strokeWidth={1.7} class="relative text-white/60" />
+						{:else}
+							<LockKeyhole size={25} strokeWidth={1.7} class="relative text-white/45" />
+						{/if}
 					</div>
 				</div>
 
 				<div class="mx-auto mt-7 max-w-sm">
-					<button
-						type="button"
-						onclick={spinWheel}
-						disabled={!canSpin || spinning}
-						class={[
-							'flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-lg text-[11px] font-bold uppercase tracking-[0.055em] transition duration-200 disabled:cursor-not-allowed',
-							canSpin
-								? 'bg-white text-[#10141b] hover:bg-[#e9edf2]'
-								: 'border border-white/[0.06] bg-white/[0.025] text-white/25'
-						]}
-					>
-						{#if spinning}
-							<div
-								class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black/15 border-t-black/70"
-							></div>
+					{#if !isLoggedIn}
+						<a
+							href="/"
+							class="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-white text-[11px] font-bold uppercase tracking-[0.055em] text-[#10141b] transition duration-200 hover:bg-[#e9edf2]"
+						>
+							<LockKeyhole size={15} strokeWidth={2.2} />
 
-							Wheel dreht...
-						{:else if canSpin}
-							<Zap size={15} strokeWidth={2.3} />
+							Einloggen zum Drehen
+						</a>
 
-							Jetzt drehen
-						{:else}
-							<Check size={15} />
-
-							Heute bereits gedreht
-						{/if}
-					</button>
-
-					{#if !canSpin}
-						<p class="mt-2.5 text-center text-[10px] text-white/22">
-							Der nächste Spin ist morgen ab 00:00 Uhr verfügbar.
+						<p class="mt-2.5 text-center text-[10px] leading-4 text-white/25">
+							Melde dich an und drehe jeden Tag kostenlos am Wheel.
 						</p>
+					{:else}
+						<button
+							type="button"
+							onclick={spinWheel}
+							disabled={!canSpin || spinning}
+							class={[
+								'flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-lg text-[11px] font-bold uppercase tracking-[0.055em] transition duration-200 disabled:cursor-not-allowed',
+								canSpin
+									? 'bg-white text-[#10141b] hover:bg-[#e9edf2]'
+									: 'border border-white/[0.06] bg-white/[0.025] text-white/25'
+							]}
+						>
+							{#if spinning}
+								<div
+									class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black/15 border-t-black/70"
+								></div>
+
+								Wheel dreht...
+							{:else if canSpin}
+								<Zap size={15} strokeWidth={2.3} />
+
+								Jetzt drehen
+							{:else}
+								<Check size={15} />
+
+								Heute bereits gedreht
+							{/if}
+						</button>
+
+						{#if !canSpin}
+							<p class="mt-2.5 text-center text-[10px] text-white/22">
+								Der nächste Spin ist morgen ab 00:00 Uhr verfügbar.
+							</p>
+						{/if}
 					{/if}
 
 					{#if errorMessage}
@@ -673,6 +724,31 @@
 					</div>
 				</div>
 
+				{#if !isLoggedIn}
+					<div
+						class="page-enter page-enter-6 rounded-xl border border-[#8dc7ff]/10 bg-[#8dc7ff]/[0.025] p-4"
+					>
+						<div class="flex items-start gap-3">
+							<div
+								class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#8dc7ff]/10 bg-[#8dc7ff]/[0.04]"
+							>
+								<LockKeyhole size={14} class="text-[#8dc7ff]/70" />
+							</div>
+
+							<div>
+								<div class="text-[9px] font-bold uppercase tracking-[0.13em] text-[#8dc7ff]/65">
+									Account benötigt
+								</div>
+
+								<p class="mt-1.5 text-[10px] leading-5 text-white/30">
+									Um deine Daily Streak aufzubauen und Rewards zu erhalten, musst du eingeloggt
+									sein.
+								</p>
+							</div>
+						</div>
+					</div>
+				{/if}
+
 				<div
 					class="page-enter page-enter-6 rounded-xl border border-white/[0.065] bg-[#0e1117] p-4"
 				>
@@ -713,7 +789,7 @@
 		</div>
 	</div>
 
-	{#if showResult && result}
+	{#if showResult && result && isLoggedIn}
 		<div
 			class="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm"
 		>
@@ -969,14 +1045,6 @@
 			0 0 25px rgb(141 199 255 / 0.035);
 	}
 
-	/*
-		Der Wrapper außen übernimmt die
-		Positionierung.
-
-		Diese Animation verändert deshalb
-		NUR den inneren Pfeil und kann ihn
-		nicht mehr nach links verschieben.
-	*/
 	.pointer-tip {
 		transform-origin: 50% 0%;
 	}

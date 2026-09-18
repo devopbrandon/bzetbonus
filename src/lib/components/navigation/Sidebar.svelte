@@ -38,6 +38,7 @@
 		label: string;
 		href: string;
 		icon: string;
+		color: string;
 	};
 
 	type Profile = {
@@ -127,22 +128,26 @@
 		{
 			label: 'Twitch',
 			href: 'https://www.twitch.tv/bzetbros',
-			icon: '/images/socials/twitch_white.svg'
+			icon: '/images/socials/twitch_white.svg',
+			color: '#9146FF'
 		},
 		{
 			label: 'Instagram',
 			href: 'https://www.instagram.com/realbzet?igsi=eThpc3J6amZzeWlp',
-			icon: '/images/socials/instagram.svg'
+			icon: '/images/socials/instagram.svg',
+			color: '#E1306C'
 		},
 		{
 			label: 'YouTube',
 			href: 'https://youtube.com/@realbzet?si=d2JgJw1OHcyUk81t',
-			icon: '/images/socials/youtube.svg'
+			icon: '/images/socials/youtube.svg',
+			color: '#FF0000'
 		},
 		{
 			label: 'Discord',
 			href: 'https://discord.gg/RkUaKZnYY',
-			icon: '/images/socials/discord.svg'
+			icon: '/images/socials/discord.svg',
+			color: '#5865F2'
 		}
 	];
 
@@ -614,7 +619,8 @@
 					target="_blank"
 					rel="noreferrer"
 					aria-label={social.label}
-					class="group relative flex h-9 w-9 items-center justify-center rounded-lg text-white/40 transition duration-200 hover:bg-white/[0.055] hover:text-white"
+					class="group relative flex h-9 w-9 items-center justify-center rounded-lg text-white/40 transition duration-200 hover:bg-[var(--social-color)] hover:text-white"
+					style={`--social-color: ${social.color}`}
 				>
 					<img
 						src={social.icon}

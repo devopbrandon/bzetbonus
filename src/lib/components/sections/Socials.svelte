@@ -7,6 +7,7 @@
 		icon: string;
 		action: string;
 		subtitle: string;
+		color: string;
 	};
 
 	const socialItems: SocialItem[] = [
@@ -15,28 +16,32 @@
 			href: 'https://www.twitch.tv/bzetbros',
 			icon: '/images/socials/twitch_white.svg',
 			action: 'Folgen',
-			subtitle: 'Live Streams & Casino Content'
+			subtitle: 'Live Streams & Casino Content',
+			color: '#9146FF'
 		},
 		{
 			label: 'Instagram',
 			href: 'https://www.instagram.com/realbzet?igsi=eThpc3J6amZzeWlp',
 			icon: '/images/socials/instagram.svg',
 			action: 'Folgen',
-			subtitle: 'Storys, Updates & Highlights'
+			subtitle: 'Storys, Updates & Highlights',
+			color: '#E1306C'
 		},
 		{
 			label: 'YouTube',
 			href: 'https://youtube.com/@realbzet?si=d2JgJw1OHcyUk81t',
 			icon: '/images/socials/youtube.svg',
 			action: 'Abonnieren',
-			subtitle: 'Videos, Highlights & mehr'
+			subtitle: 'Videos, Highlights & mehr',
+			color: '#FF0000'
 		},
 		{
 			label: 'Discord',
 			href: 'https://discord.gg/RkUaKZnYY',
 			icon: '/images/socials/discord.svg',
 			action: 'Beitreten',
-			subtitle: 'Direkt in die BZET Community'
+			subtitle: 'Direkt in die BZET Community',
+			color: '#5865F2'
 		}
 	];
 </script>
@@ -66,7 +71,7 @@
 
 		<!-- Social Grid -->
 		<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-			{#each socialItems as social}
+			{#each socialItems as social (social.label)}
 				<a
 					href={social.href}
 					target="_blank"
@@ -82,7 +87,8 @@
 						<!-- Icon Row -->
 						<div class="flex items-start justify-between">
 							<div
-								class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-white/[0.07] bg-[#171a22] transition-all duration-200 group-hover:border-[#67c8ff]/20 group-hover:bg-[#16202a]"
+								style={`background-color: ${social.color}`}
+								class="flex h-9 w-9 items-center justify-center rounded-[8px] border border-white/[0.07] transition-all duration-200 group-hover:border-[#67c8ff]/20 group-hover:bg-[#16202a]"
 							>
 								<img
 									src={social.icon}

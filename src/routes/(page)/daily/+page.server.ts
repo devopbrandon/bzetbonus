@@ -1,4 +1,3 @@
-import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 function getBerlinDate(date = new Date()) {
@@ -24,26 +23,60 @@ export const load: PageServerLoad = async ({ locals }) => {
 		data: { user }
 	} = await locals.supabase.auth.getUser();
 
-	if (!user) {
-		throw redirect(303, '/');
-	}
-
 	const today = getBerlinDate();
 	const yesterday = getPreviousDate(today);
 
-	const [{ data: streak }, { data: allRewards }, { data: profile }] = await Promise.all([
+	/*
+	 * Rewards dürfen auch Gäste sehen.
+	 * Dadurch können wir Gästen das Tag-1-Wheel als Vorschau anzeigen.
+	 */
+	const { data: allRewards } = await locals.supabase
+		.from('daily_wheel_rewards')
+		.select('id, streak_day, reward_type, label, reward_value, weight, position')
+		.eq('is_active', true)
+		.order('streak_day')
+		.order('position');
+
+	/*
+	 * GAST
+	 *
+	 * Kein Redirect mehr.
+	 * Stattdessen bekommt der Gast neutrale Default-Werte
+	 * und sieht das Wheel von Tag 1.
+	 */
+	if (!user) {
+		const wheelDay = 1;
+
+		const rewards = (allRewards ?? []).filter((reward) => reward.streak_day === wheelDay);
+
+		return {
+			user: null,
+
+			isLoggedIn: false,
+
+			points: 0,
+			balance: 0,
+
+			streakDay: 0,
+			wheelDay,
+
+			canSpin: false,
+
+			totalSpins: 0,
+
+			rewards
+		};
+	}
+
+	/*
+	 * EINGELOGGTER USER
+	 */
+	const [{ data: streak }, { data: profile }] = await Promise.all([
 		locals.supabase
 			.from('daily_streaks')
 			.select('streak_day, last_spin_date, total_spins')
 			.eq('user_id', user.id)
 			.maybeSingle(),
-
-		locals.supabase
-			.from('daily_wheel_rewards')
-			.select('id, streak_day, reward_type, label, reward_value, weight, position')
-			.eq('is_active', true)
-			.order('streak_day')
-			.order('position'),
 
 		locals.supabase.from('profiles').select('points, balance').eq('id', user.id).single()
 	]);
@@ -58,6 +91,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	if (alreadySpunToday) {
 		displayStreak = storedStreakDay;
+
 		wheelDay = storedStreakDay || 1;
 	} else if (lastSpinDate === yesterday) {
 		displayStreak = storedStreakDay;
@@ -74,6 +108,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		user: {
 			id: user.id
 		},
+
+		isLoggedIn: true,
 
 		points: profile?.points ?? 0,
 		balance: Number(profile?.balance ?? 0),
